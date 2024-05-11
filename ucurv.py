@@ -127,7 +127,7 @@ def upsamp(band, samp):
 r = [1.0472, 2.0944, 2.0944, 4.1888]
 alpha = 0.15
 
-
+####  class to hold all curvelet windows and other based on transform configuration
 class ucurv:
     def __init__(self, sz, cfg):
         self.name = "ucurv"
@@ -243,7 +243,8 @@ class ucurv:
         self.Msubwin = {}
         for id, subwin in Msubwin.items():
             self.Msubwin[id] = np.fft.fftshift(np.sqrt(2*np.prod(self.Sampling[(id[0], id[1])]) *subwin / sumall))
-        self.FL = np.fft.fftshift(np.sqrt(FL/sumall))        
+        self.Sampling[(0)]  = 2**(res-1)*np.ones(dim, dtype = int) 
+        self.FL = np.sqrt(np.prod(self.Sampling[(0)]))*np.fft.fftshift(np.sqrt(FL/sumall))
 
 
 def ucurvfwd(img, udct):
@@ -253,9 +254,10 @@ def ucurvfwd(img, udct):
 
     imf = np.fft.fftn(img)
 
-
     imband = {}
-    imband[0] = np.real(np.fft.ifftn(imf*FL))
+    bandfilt = np.real(np.fft.ifftn(imf*FL))
+    print(bandfilt.shape, Sampling[(0)])
+    imband[0] = downsamp(bandfilt, Sampling[(0)]) # np.real(np.fft.ifftn(imf*FL))
     for id, subwin in Msubwin.items():
         bandfilt = np.fft.ifftn(imf *subwin)
         # samp = Sampling[(id[0], id[1])]
@@ -271,8 +273,8 @@ def ucurvinv(imband, udct):
     Msubwin = udct.Msubwin
     FL = udct.FL
     Sampling = udct.Sampling
-    imlow = imband[0]
-
+    # imlow = imband[0]
+    imlow = upsamp(imband[0], Sampling[(0)])
     recon = np.real(np.fft.ifftn( np.fft.fftn(imlow) * FL) )
     for id, subwin in Msubwin.items():
         # bandup = np.zeros_like(imf)
