@@ -132,6 +132,11 @@ class ucurv:
     def __init__(self, sz, cfg):
         self.name = "ucurv"
         # 
+        self.sz = sz
+        self.cfg = cfg
+        self.dim = len(sz)
+        self.res = len(cfg)
+
         dim = len(sz)
         res = len(cfg)
 
@@ -283,4 +288,34 @@ def ucurvinv(imband, udct):
         bandup = upsamp(imband[id], Sampling[(id[0], id[1])])
         recon = recon + np.real(np.fft.ifftn( np.fft.fftn(bandup) * subwin ))
     
-    return recon        
+    return recon
+
+    
+def ucurv2d_show(imband, udct):
+    if udct.dim != 2:
+        raise Exception(" ucurv2d_show only work with 2D transform")
+    cfg = udct.cfg
+    imlist = []
+    res = udct.res
+    sz = udct.sz
+    for rs in range(res):
+        dirim = []
+        for dir in [0, 1]:
+            bandlist = [imband[(rs, dir, i)] for i in range(cfg[rs][dir])]
+            dirim.append(np.concatenate(bandlist , axis = 1-dir))
+
+        sp = dirim[1].shape
+        sp0 = sp[0]//3
+        d1 = np.concatenate([dirim[1][:sp0,:], dirim[1][sp0:2*sp0,:], dirim[1][2*sp0:,:] ] , axis = 1)
+        dimg = np.concatenate([dirim[0], d1] , axis = 0)
+        dshape = dimg.shape
+        dimg2 = np.zeros((sz[0], np.max(dshape)), dtype = complex)
+        dimg2[:dshape[0], :dshape[1]] = dimg
+        imlist.append(dimg2)
+
+    dimg2 = np.concatenate(imlist, axis = 1)
+    lbshape = imband[0].shape
+    iml = np.zeros((sz[0], lbshape[1]), dtype = complex)
+    iml[:lbshape[0], :] = imband[0]
+    dimg3 = np.concatenate([iml, dimg2], axis = 1)
+    return dimg3
