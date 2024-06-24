@@ -293,7 +293,7 @@ def ucurvinv(imband, udct):
     
 def ucurv2d_show(imband, udct):
     if udct.dim != 2:
-        raise Exception(" ucurv2d_show only works with 2D transform")
+        raise Exception(" ucurv2d_show only work with 2D transform")
     cfg = udct.cfg
     imlist = []
     res = udct.res
