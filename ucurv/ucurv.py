@@ -90,20 +90,24 @@ def angle_fun(Mgrid, n, alpha, dir, bandpass = None):
         
     return Mang
 
-
 def angle_kron(F, dr, sz):
+    """
+    This function replicate the 2D array F at dimension dr to match the size sz
+    """
     sp = list(F.shape)
     sp2 = int(np.prod(sz)/np.prod(F.shape))
-    sp.append(sp2)
-    #print(sp, sp2)
-    Fk = np.reshape(np.kron(F.flatten(), np.ones( sp2 )) ,  sp)
+    # remove dr element from sz
+    sz2 = list(sz)
+    sz2 = [i for j, i in enumerate(sz) if j not in dr]
+    # now append sz2 to sp
+    sp = sp + sz2
+    # Fk is the replicated version of F, along the dimension other than dr[0,1]
+    Fk = np.reshape(np.kron(F.flatten(), np.ones( sp2 )),  sp)
 
-    #print(Fk.shape)
+    # Move the dimensions 0,1 to dr
     Fk = np.moveaxis(Fk, [0 ,1] , dr)
-    #print(Fk.shape)
-    #Fk =  np.swapaxes(Fk, 1, 2)
-    # print("ff",Fk.shape)
     return Fk
+
 
 def downsamp(band, samp):
     """
@@ -136,8 +140,8 @@ def upsamp(band, samp):
     return bandup
 
 
-r = [1.0472, 2.0944, 2.0944, 4.1888]
-alpha = 0.15
+r = np.pi*np.array([1/3, 2/3, 2/3, 4/3])
+alpha = 0.1
 
 ####  class to hold all curvelet windows and other based on transform configuration
 class ucurv:
@@ -153,6 +157,8 @@ class ucurv:
         res = len(cfg)
 
         self.Sampling = {}
+        # create the subsampling vectors
+        self.Sampling[(0)]  = 2**(res-1)*np.ones(dim, dtype = int) 
         for rs in range(res):
             for ipyr in range(dim):
                 dmat = []
@@ -260,7 +266,6 @@ class ucurv:
         self.Msubwin = {}
         for id, subwin in Msubwin.items():
             self.Msubwin[id] = np.fft.fftshift(np.sqrt(2*np.prod(self.Sampling[(id[0], id[1])]) *subwin / sumall))
-        self.Sampling[(0)]  = 2**(res-1)*np.ones(dim, dtype = int) 
         self.FL = np.sqrt(np.prod(self.Sampling[(0)]))*np.fft.fftshift(np.sqrt(FL/sumall))
 
 
