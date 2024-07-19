@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import itertools
 
 def fun_meyer(x, param):
     """
@@ -47,7 +48,7 @@ def tan_theta_grid(S1, S2):
 
     return M2
 
-def fftflip(F, dirlist):
+def fftflip(F, dirlist = None):
     """
     Return a fftflip of array F, either on a list of dimension, or a single dimension.
     A fftflip use to produce a X(-omega) representation of X(omega) in a FFT representation
@@ -56,7 +57,8 @@ def fftflip(F, dirlist):
     """
     Fc = F.copy()
     dim = Fc.ndim
-        
+    if dirlist is None:
+        dirlist = list(range(dim))
     shiftvec = np.zeros(dim)
     if type(dirlist) is list:
         for dir in dirlist:
@@ -139,17 +141,18 @@ def upsamp(band, samp):
 
     return bandup
 
-
 r = np.pi*np.array([1/3, 2/3, 2/3, 4/3])
 alpha = 0.1
 
 ####  class to hold all curvelet windows and other based on transform configuration
-class ucurv:
-    def __init__(self, sz, cfg):
+class udct:
+    def __init__(self, sz, cfg, complex = False, sparse = False):
         self.name = "ucurv"
         # 
-        self.sz = sz
-        self.cfg = cfg
+        self.sz = tuple(sz)
+        self.cfg = tuple(cfg)
+        self.complex = complex
+        self.sparse = sparse
         self.dim = len(sz)
         self.res = len(cfg)
 
@@ -157,6 +160,13 @@ class ucurv:
         res = len(cfg)
 
         self.Sampling = {}
+        # calculate output len
+        clen = np.prod(np.array(sz))//((2**self.dim)**(self.res-1))
+        self.len = clen
+        for i in range(self.res):
+            clen = clen*((2**self.dim)**i)
+            self.len = self.len + clen*self.dim*3**(self.dim-1)//2**(self.dim-1)
+
         # create the subsampling vectors
         self.Sampling[(0)]  = 2**(res-1)*np.ones(dim, dtype = int) 
         for rs in range(res):
@@ -224,31 +234,30 @@ class ucurv:
         #################################
         Msubwin = {}
         cnt = 0
-        for rs in range(res):
-            for ipyr in range(dim):
-                id_angle_list = []
-                dlist = []
-                for idir2 in range(dim):
-                    if ipyr == idir2:
-                        continue
-                    else:
-                        dlist.append(idir2)
-                        # print(cfg[rs][idir2])
-                        if len(id_angle_list) == 0:
-                            id_angle_list = [[i] for i in range(cfg[rs][idir2]) ]
-                        else:
-                            new_list = []
-                            for i in range(len(id_angle_list)):
-                                for j in range(cfg[rs][idir2]):
-                                    new_list.append((id_angle_list[i] + [j]))
-                            id_angle_list = new_list.copy()
 
-                # print(id_angle_list)
-                
+        for rs in range(res):
+            dlists = list(itertools.combinations(range(dim), dim - 1))[::-1]
+            #print(dlists)
+            id_angle_lists = []
+            for x in dlists:
+                new_list = [[i] for i in range(cfg[rs][x[0]])]
+                for i in range(1, len(x)):
+                    new_list = [z + [j] for z in new_list for j in range(cfg[rs][x[i]])] 
+                id_angle_lists.append(new_list)
+            #print(dlists)
+            #print(id_angle_lists)
+            for ipyr in range(dim):
+                # for each resolution-pyramid, id_angle_list is the angle combinaion within that pyramid
+                # for instance, (5,5) would be the last angle of a (6,6) 3D pyramid
+                # and dlist is the list of the dimension of that pyramid, 
+                # for instance (0,2) would be the list of pyramid of dimension 1 in 3D case
+                id_angle_list = id_angle_lists[ipyr]
+                dlist = list(dlists[ipyr])
+
                 for alist in id_angle_list:
                     subband = np.ones(sz)
                     for idir, aid in enumerate(alist):
-                        angkron = np.squeeze(angle_kron(Mang2[(rs, ipyr, dlist[idir])][aid] , [ipyr, dlist[idir]], sz))
+                        angkron = angle_kron(Mang2[(rs, ipyr, dlist[idir])][aid] , [ipyr, dlist[idir]], sz)
                         subband = subband*angkron
                         cnt += 1
 
@@ -260,32 +269,67 @@ class ucurv:
             sumall = sumall + subwin
             # print(id, np.max(subwin), np.max(sumall))
 
-        sumall = sumall + fftflip(sumall, list(range(dim)))
+        sumall = sumall + fftflip(sumall)
         sumall = sumall + FL
 
         self.Msubwin = {}
         for id, subwin in Msubwin.items():
-            self.Msubwin[id] = np.fft.fftshift(np.sqrt(2*np.prod(self.Sampling[(id[0], id[1])]) *subwin / sumall))
-        self.FL = np.sqrt(np.prod(self.Sampling[(0)]))*np.fft.fftshift(np.sqrt(FL/sumall))
+            win = np.fft.fftshift(np.sqrt(2*np.prod(self.Sampling[(id[0], id[1])]) *subwin / sumall))
+            if sparse:
+                self.Msubwin[id] = ( np.nonzero(win), win[np.nonzero(win)] )
+            else:
+                self.Msubwin[id] = win
+        win  = np.sqrt(np.prod(self.Sampling[(0)]))*np.fft.fftshift(np.sqrt(FL/sumall))        
+        if sparse:
+            self.FL = ( np.nonzero(win), win[np.nonzero(win)] )
+        else:
+            self.FL = win
 
 
 def ucurvfwd(img, udct):
+    assert img.shape == udct.sz
     Msubwin = udct.Msubwin
-    FL = udct.FL
+    # FL = udct.FL
     Sampling = udct.Sampling
+    if udct.sparse:
+        FL = np.zeros(udct.sz)
+        FL[udct.FL[0]] = udct.FL[1]
+    else:
+        FL = udct.FL    
+
 
     imf = np.fft.fftn(img)
+    if udct.complex:
+        imband = {}
+        bandfilt = np.fft.ifftn(imf*FL)
+        imband[0] = downsamp(bandfilt, Sampling[(0)])
+        for id, subwin in Msubwin.items():
+            if udct.sparse:
+                sbwin = np.zeros(udct.sz)
+                sbwin[subwin[0]] = subwin[1]
+                subwin = sbwin
+            bandfilt = np.sqrt(0.5)*np.fft.ifftn(imf *subwin)
+            imband[id] = downsamp(bandfilt, Sampling[(id[0], id[1])])
+            id2 = list(id)
+            id2[1] = id2[1] + udct.dim
+            bandfilt = np.sqrt(0.5)*np.fft.ifftn(imf *fftflip(subwin))
+            imband[tuple(id2)] = downsamp(bandfilt, Sampling[(id[0], id[1])])
 
-    imband = {}
-    bandfilt = np.real(np.fft.ifftn(imf*FL))
-    print(bandfilt.shape, Sampling[(0)])
-    imband[0] = downsamp(bandfilt, Sampling[(0)]) # np.real(np.fft.ifftn(imf*FL))
-    for id, subwin in Msubwin.items():
-        bandfilt = np.fft.ifftn(imf *subwin)
-        # samp = Sampling[(id[0], id[1])]
-        # imband[id] = bandfilt[::samp[0], ::samp[1]]
-        imband[id] = downsamp(bandfilt, Sampling[(id[0], id[1])])
-        # print(bandfilt.shape, Sampling[(id[0], id[1])], imband[id].shape)
+    else:    
+        imband = {}
+        bandfilt = np.real(np.fft.ifftn(imf*FL))
+        imband[0] = downsamp(bandfilt, Sampling[(0)]) # np.real(np.fft.ifftn(imf*FL))
+        for id, subwin in Msubwin.items():
+            if udct.sparse:
+                sbwin = np.zeros(udct.sz)
+                sbwin[subwin[0]] = subwin[1]
+                subwin = sbwin
+
+            bandfilt = np.fft.ifftn(imf *subwin)
+            # samp = Sampling[(id[0], id[1])]
+            # imband[id] = bandfilt[::samp[0], ::samp[1]]
+            imband[id] = downsamp(bandfilt, Sampling[(id[0], id[1])])
+            # print(bandfilt.shape, Sampling[(id[0], id[1])], imband[id].shape)
 
     return imband    
 
@@ -293,46 +337,38 @@ def ucurvfwd(img, udct):
 ##############
 def ucurvinv(imband, udct):
     Msubwin = udct.Msubwin
-    FL = udct.FL
     Sampling = udct.Sampling
     # imlow = imband[0]
     imlow = upsamp(imband[0], Sampling[(0)])
-    recon = np.real(np.fft.ifftn( np.fft.fftn(imlow) * FL) )
+
+    if udct.sparse:
+        FL = np.zeros(udct.sz)
+        FL[udct.FL[0]] = udct.FL[1]
+    else:
+        FL = udct.FL    
+
+    if udct.complex:
+        recon = np.fft.ifftn( np.fft.fftn(imlow) * FL)
+    else:
+        recon = np.real(np.fft.ifftn( np.fft.fftn(imlow) * FL) )    
+
     for id, subwin in Msubwin.items():
-        # bandup = np.zeros_like(imf)
-        # samp = Sampling[(id[0], id[1])]
-        # bandup[::samp[0], ::samp[1]] = imband[id]
-        bandup = upsamp(imband[id], Sampling[(id[0], id[1])])
-        recon = recon + np.real(np.fft.ifftn( np.fft.fftn(bandup) * subwin ))
+        if udct.sparse:
+            sbwin = np.zeros(udct.sz)
+            sbwin[subwin[0]] = subwin[1]
+            subwin = sbwin
+
+        if udct.complex:
+            bandup = upsamp(imband[id], Sampling[(id[0], id[1])])
+            recon = recon + np.sqrt(0.5)*np.fft.ifftn( np.fft.fftn(bandup) * subwin )
+            id2 = list(id)
+            id2[1] = id2[1] + udct.dim
+            bandup = upsamp(imband[tuple(id2)], Sampling[(id[0], id[1])])
+            recon = recon + np.sqrt(0.5)*np.fft.ifftn( np.fft.fftn(bandup) * fftflip(subwin) )
+        else:
+            bandup = upsamp(imband[id], Sampling[(id[0], id[1])])
+            recon = recon + np.real(np.fft.ifftn( np.fft.fftn(bandup) * subwin ))
     
     return recon
 
     
-def ucurv2d_show(imband, udct):
-    if udct.dim != 2:
-        raise Exception(" ucurv2d_show only work with 2D transform")
-    cfg = udct.cfg
-    imlist = []
-    res = udct.res
-    sz = udct.sz
-    for rs in range(res):
-        dirim = []
-        for dir in [0, 1]:
-            bandlist = [imband[(rs, dir, i)] for i in range(cfg[rs][dir])]
-            dirim.append(np.concatenate(bandlist , axis = 1-dir))
-
-        sp = dirim[1].shape
-        sp0 = sp[0]//3
-        d1 = np.concatenate([dirim[1][:sp0,:], dirim[1][sp0:2*sp0,:], dirim[1][2*sp0:,:] ] , axis = 1)
-        dimg = np.concatenate([dirim[0], d1] , axis = 0)
-        dshape = dimg.shape
-        dimg2 = np.zeros((sz[0], np.max(dshape)), dtype = complex)
-        dimg2[:dshape[0], :dshape[1]] = dimg
-        imlist.append(dimg2)
-
-    dimg2 = np.concatenate(imlist, axis = 1)
-    lbshape = imband[0].shape
-    iml = np.zeros((sz[0], lbshape[1]), dtype = complex)
-    iml[:lbshape[0], :] = imband[0]
-    dimg3 = np.concatenate([iml, dimg2], axis = 1)
-    return dimg3
