@@ -141,18 +141,18 @@ def upsamp(band, samp):
 
     return bandup
 
-
 r = np.pi*np.array([1/3, 2/3, 2/3, 4/3])
 alpha = 0.1
 
 ####  class to hold all curvelet windows and other based on transform configuration
-class ucurv:
-    def __init__(self, sz, cfg, complex = False):
+class udct:
+    def __init__(self, sz, cfg, complex = False, sparse = False):
         self.name = "ucurv"
         # 
         self.sz = tuple(sz)
         self.cfg = tuple(cfg)
         self.complex = complex
+        self.sparse = sparse
         self.dim = len(sz)
         self.res = len(cfg)
 
@@ -160,6 +160,13 @@ class ucurv:
         res = len(cfg)
 
         self.Sampling = {}
+        # calculate output len
+        clen = np.prod(np.array(sz))//((2**self.dim)**(self.res-1))
+        self.len = clen
+        for i in range(self.res):
+            clen = clen*((2**self.dim)**i)
+            self.len = self.len + clen*self.dim*3**(self.dim-1)//2**(self.dim-1)
+
         # create the subsampling vectors
         self.Sampling[(0)]  = 2**(res-1)*np.ones(dim, dtype = int) 
         for rs in range(res):
@@ -267,15 +274,29 @@ class ucurv:
 
         self.Msubwin = {}
         for id, subwin in Msubwin.items():
-            self.Msubwin[id] = np.fft.fftshift(np.sqrt(2*np.prod(self.Sampling[(id[0], id[1])]) *subwin / sumall))
-        self.FL = np.sqrt(np.prod(self.Sampling[(0)]))*np.fft.fftshift(np.sqrt(FL/sumall))
+            win = np.fft.fftshift(np.sqrt(2*np.prod(self.Sampling[(id[0], id[1])]) *subwin / sumall))
+            if sparse:
+                self.Msubwin[id] = ( np.nonzero(win), win[np.nonzero(win)] )
+            else:
+                self.Msubwin[id] = win
+        win  = np.sqrt(np.prod(self.Sampling[(0)]))*np.fft.fftshift(np.sqrt(FL/sumall))        
+        if sparse:
+            self.FL = ( np.nonzero(win), win[np.nonzero(win)] )
+        else:
+            self.FL = win
 
 
 def ucurvfwd(img, udct):
     assert img.shape == udct.sz
     Msubwin = udct.Msubwin
-    FL = udct.FL
+    # FL = udct.FL
     Sampling = udct.Sampling
+    if udct.sparse:
+        FL = np.zeros(udct.sz)
+        FL[udct.FL[0]] = udct.FL[1]
+    else:
+        FL = udct.FL    
+
 
     imf = np.fft.fftn(img)
     if udct.complex:
@@ -283,6 +304,10 @@ def ucurvfwd(img, udct):
         bandfilt = np.fft.ifftn(imf*FL)
         imband[0] = downsamp(bandfilt, Sampling[(0)])
         for id, subwin in Msubwin.items():
+            if udct.sparse:
+                sbwin = np.zeros(udct.sz)
+                sbwin[subwin[0]] = subwin[1]
+                subwin = sbwin
             bandfilt = np.sqrt(0.5)*np.fft.ifftn(imf *subwin)
             imband[id] = downsamp(bandfilt, Sampling[(id[0], id[1])])
             id2 = list(id)
@@ -295,6 +320,11 @@ def ucurvfwd(img, udct):
         bandfilt = np.real(np.fft.ifftn(imf*FL))
         imband[0] = downsamp(bandfilt, Sampling[(0)]) # np.real(np.fft.ifftn(imf*FL))
         for id, subwin in Msubwin.items():
+            if udct.sparse:
+                sbwin = np.zeros(udct.sz)
+                sbwin[subwin[0]] = subwin[1]
+                subwin = sbwin
+
             bandfilt = np.fft.ifftn(imf *subwin)
             # samp = Sampling[(id[0], id[1])]
             # imband[id] = bandfilt[::samp[0], ::samp[1]]
@@ -307,16 +337,26 @@ def ucurvfwd(img, udct):
 ##############
 def ucurvinv(imband, udct):
     Msubwin = udct.Msubwin
-    FL = udct.FL
     Sampling = udct.Sampling
     # imlow = imband[0]
     imlow = upsamp(imband[0], Sampling[(0)])
+
+    if udct.sparse:
+        FL = np.zeros(udct.sz)
+        FL[udct.FL[0]] = udct.FL[1]
+    else:
+        FL = udct.FL    
+
     if udct.complex:
         recon = np.fft.ifftn( np.fft.fftn(imlow) * FL)
     else:
         recon = np.real(np.fft.ifftn( np.fft.fftn(imlow) * FL) )    
 
     for id, subwin in Msubwin.items():
+        if udct.sparse:
+            sbwin = np.zeros(udct.sz)
+            sbwin[subwin[0]] = subwin[1]
+            subwin = sbwin
 
         if udct.complex:
             bandup = upsamp(imband[id], Sampling[(id[0], id[1])])
@@ -332,31 +372,3 @@ def ucurvinv(imband, udct):
     return recon
 
     
-def ucurv2d_show(imband, udct):
-    if udct.dim != 2:
-        raise Exception(" ucurv2d_show only work with 2D transform")
-    cfg = udct.cfg
-    imlist = []
-    res = udct.res
-    sz = udct.sz
-    for rs in range(res):
-        dirim = []
-        for dir in [0, 1]:
-            bandlist = [imband[(rs, dir, i)] for i in range(cfg[rs][dir])]
-            dirim.append(np.concatenate(bandlist , axis = 1-dir))
-
-        sp = dirim[1].shape
-        sp0 = sp[0]//3
-        d1 = np.concatenate([dirim[1][:sp0,:], dirim[1][sp0:2*sp0,:], dirim[1][2*sp0:,:] ] , axis = 1)
-        dimg = np.concatenate([dirim[0], d1] , axis = 0)
-        dshape = dimg.shape
-        dimg2 = np.zeros((sz[0], np.max(dshape)), dtype = complex)
-        dimg2[:dshape[0], :dshape[1]] = dimg
-        imlist.append(dimg2)
-
-    dimg2 = np.concatenate(imlist, axis = 1)
-    lbshape = imband[0].shape
-    iml = np.zeros((sz[0], lbshape[1]), dtype = complex)
-    iml[:lbshape[0], :] = imband[0]
-    dimg3 = np.concatenate([iml, dimg2], axis = 1)
-    return dimg3
