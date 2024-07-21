@@ -1,6 +1,23 @@
 import math
 import numpy as np
-import itertools
+
+def combinations(lst, r):
+    if r == 0:
+        return [()]
+    elif len(lst) < r:
+        return []
+    elif len(lst) == r:
+        return [tuple(lst)]
+    
+    result = []
+    for i in range(len(lst)):
+        for tail in combinations(lst[i + 1:], r - 1):
+            result.append((lst[i],) + tail)
+    return result
+
+def generate_combinations(dim):
+    lst = list(range(dim))
+    return combinations(lst, dim - 1)
 
 def fun_meyer(x, param):
     """
@@ -236,7 +253,7 @@ class udct:
         cnt = 0
 
         for rs in range(res):
-            dlists = list(itertools.combinations(range(dim), dim - 1))[::-1]
+            dlists = generate_combinations(dim)[::-1]
             #print(dlists)
             id_angle_lists = []
             for x in dlists:
