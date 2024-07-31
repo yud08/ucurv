@@ -1,3 +1,4 @@
-from ucurv.ucurv import *
 from ucurv.util import *
+from ucurv.meyerwavelet import *
+from ucurv.ucurv import *
 
