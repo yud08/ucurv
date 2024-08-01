@@ -24,10 +24,13 @@ def fun_meyer(x, param):
     return y.reshape(x.shape)
 
 def bands2vec(imband):
-    compressed = imband[0].flatten()
+    """
+    Convert dictionary of subband to a vector
+    """
+    compressed = np.real(imband[(0,)].flatten())
     # ucurv.imSz[0] = imband[0].shape
     for id, subwin in imband.items():
-        if id == 0: continue
+        if id == (0,): continue
         # ucurv.imSz[id] = subwin.shape
         a = np.real(subwin.flatten())
         b = np.imag(subwin.flatten())
@@ -36,11 +39,15 @@ def bands2vec(imband):
     return compressed
 
 def vec2bands(imband, udct):
+    """
+    Convert vector banck to a dictionary of subband
+    """
     imSz = np.array(udct.sz)//2**(udct.res - 1)
-    uncompressed = {0:np.reshape(imband[:np.prod(imSz)], imSz)}
+    # first is the low band
+    uncompressed = {(0,) :np.reshape(imband[:np.prod(imSz)], imSz)}
     p = np.prod(imSz)
     for id in udct.Msubwin.keys():
-        if id == 0: continue
+        #if id == 0: continue
         imSz = udct.sz // udct.Sampling[(id[0], id[1])]
         c = imband[p:p + 2 * np.prod(imSz)]
         c = [complex(c[i], c[i + 1]) for i in range(0, len(c), 2)]
@@ -71,8 +78,8 @@ def ucurv2d_show(imband, udct):
         imlist.append(dimg2)
 
     dimg2 = np.concatenate(imlist, axis = 1)
-    lbshape = imband[0].shape
+    lbshape = imband[(0,)].shape
     iml = np.zeros((sz[0], lbshape[1]), dtype = complex)
-    iml[:lbshape[0], :] = imband[0]
+    iml[:lbshape[0], :] = imband[(0,)]
     dimg3 = np.concatenate([iml, dimg2], axis = 1)
     return dimg3
