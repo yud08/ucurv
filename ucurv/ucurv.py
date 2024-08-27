@@ -1,7 +1,7 @@
 import math
 import numpy as np
-from ucurv.util import fun_meyer
-from ucurv.meyerwavelet import meyerfwdmd, meyerinvmd
+from .util import fun_meyer
+from .meyerwavelet import meyerfwdmd, meyerinvmd
 
 def combinations(lst, r):
     if r == 0:
