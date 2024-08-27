@@ -1,5 +1,5 @@
 import numpy as np
-from ucurv.util import fun_meyer
+from .util import fun_meyer
 
 def meyer_wavelet(N):
     step = 2*np.pi/N
