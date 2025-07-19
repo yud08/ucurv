@@ -3,23 +3,32 @@ import numpy as np
 from .util import fun_meyer
 from .meyerwavelet import meyerfwdmd, meyerinvmd
 
-def combinations(lst, r):
-    if r == 0:
-        return [()]
-    elif len(lst) < r:
-        return []
-    elif len(lst) == r:
-        return [tuple(lst)]
-    
-    result = []
-    for i in range(len(lst)):
-        for tail in combinations(lst[i + 1:], r - 1):
-            result.append((lst[i],) + tail)
-    return result
-
 def generate_combinations(dim):
-    lst = list(range(dim))
-    return combinations(lst, dim - 1)
+    """
+    Generate all the ways to choose dim - 1 elements from (0, 1, 2, ... dim - 1), 
+    i.e all the combinations which exclude one index
+
+    Parameters
+    ----------
+    dim : int
+        The number of elements (defines the index set 0, 1, …, dim - 1).
+
+    Returns
+    -------
+    List[tuple]
+        A list of tuples, each of length `dim-1`, representing all ways to
+        omit exactly one index from the full range. 
+
+    Examples
+    --------
+    generate_combinations(4)
+    [(0, 1, 2),  (0, 1, 3), (0, 2, 3), (1, 2, 3)]
+    """
+    lst = []
+    for i in range(dim):
+        combi = tuple(j for j in range(dim) if j != i)
+        lst.append(combi)
+    return lst[::-1] #needs to be reversed
 
 def tan_theta_grid(S1, S2):
     """
@@ -46,10 +55,35 @@ def tan_theta_grid(S1, S2):
 
 def fftflip(F, dirlist = None):
     """
-    Return a fftflip of array F, either on a list of dimension, or a single dimension.
-    A fftflip use to produce a X(-omega) representation of X(omega) in a FFT representation
-    When a FFT X(omega) is flipped (or reverse), the 0 frequency will be the last element.
-    The representation need to be rolled by 1 to make the 0 frequency in the first location.
+    Flip and circularly shift an N-D FFT array so that frequency sign is reversed.
+
+    This routine performs an axis-wise reversal and roll on the input array
+    to map X(\omega) to X(-\omega) in its FFT representation.  For each
+    transformed axis, elements are flipped (so that the zero-frequency
+    component moves to the end), then rolled by one to restore the zero-frequency
+    component to the first position.
+
+    Parameters
+    ----------
+    F : ndarray
+        Input array in the frequency domain (FFT output).  Can be of any dimensionality.
+    dirlist : int or sequence of ints, optional
+        Axis or list of axes over which to apply the fftflip.  If None (default), all
+        axes of `F` will be processed.
+
+    Returns
+    -------
+    Fc : ndarray
+        A new array of the same shape as `F`, with each specified axis flipped
+        and rolled so that the frequency axis is negated.
+
+    Notes
+    -----
+    - Reversing an axis in FFT output corresponds to replacing \omega with -\omega.
+    - After `np.flip`, the zero-frequency component moves to the end of the axis.
+      `np.roll` by +1 brings it back to index 0.
+    - For multi-dimensional FFTs, reversing multiple axes implements sign
+      inversion in each frequency dimension.
     """
     Fc = F.copy()
     dim = Fc.ndim
@@ -71,6 +105,25 @@ def fftflip(F, dirlist = None):
 def angle_fun(Mgrid, n, alpha, dir, bandpass = None):
     """
     Return the angle meyer window as in Figure 8 of the paper
+    Compute directional Meyer window functions for angular decomposition.
+    Parameters
+    ----------
+    Mgrid : ndarray
+        An N-D coordinate grid (e.g., meshgrid) of angles normalized to [−1,1].
+    n : int
+        Total number of angular directions (must be positive and even).
+    alpha : float
+        Angular transition parameter controlling the width of each subband.
+    dir : int or sequence of int
+        Axis or axes along which to apply `fftflip` for the symmetric counterpart.
+    bandpass : ndarray, optional
+        An array of the same shape as `Mgrid` to modulate (mask) each window.
+
+    Returns
+    -------
+    Mang : list of ndarray
+        A list of length `n` containing the forward (`0 <= id < n/2`) and
+        flipped inverse (`n/2 <= id < n`) Meyer windows for each angular sector.
     """
     angd = 2/n
     ang = angd*np.array([-alpha, alpha, 1-alpha, 1+alpha])
@@ -91,6 +144,33 @@ def angle_fun(Mgrid, n, alpha, dir, bandpass = None):
 def angle_kron(F, dr, sz):
     """
     This function replicate the 2D array F at dimension dr to match the size sz
+
+    Constructs a multi-dimensional array by taking the Kronecker product of the
+    flattened input `F` with an all-ones array, then reshaping and moving axes
+    so that the original 2D data appear along dimensions `dr` within the final
+    shape `sz`.
+
+    Parameters
+    ----------
+    F : ndarray
+        A 2D input array of shape (m, n) to be replicated.
+    dr : tuple of int
+        Length-2 tuple specifying the target axes in the output array where
+        the original dimensions of `F` should be placed.
+    sz : sequence of int
+        Desired shape of the output array.  The product of all entries of `sz`
+        must be an integer multiple of the product of `F.shape`.
+
+    Returns
+    -------
+    Fk : ndarray
+        Array of shape `sz` containing repeated copies of `F` along all axes
+        not in `dr`, with the original 2D layout inserted at positions `dr`.
+
+    Raises
+    ------
+    ValueError
+        If `np.prod(sz)` is not divisible by `np.prod(F.shape)`.
     """
     sp = list(F.shape)
     sp2 = int(np.prod(sz)/np.prod(F.shape))
@@ -144,7 +224,7 @@ r = np.pi*np.array([1/3, 2/3, 2/3, 4/3])
 alpha = 0.1
 
 ####  class to hold all curvelet windows and other based on transform configuration
-class udct:
+class Udct:
     def __init__(self, sz, cfg, complex = False, sparse = False, high = 'curvelet'):
         self.name = "ucurv"
         # 
