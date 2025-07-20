@@ -1,0 +1,15 @@
+LICENSE
+README.md
+pyproject.toml
+setup.py
+tests/test_ucurv.py
+ucurv/__init__.py
+ucurv/meyerwavelet.py
+ucurv/ucurv.py
+ucurv/util.py
+ucurv/zoneplate.py
+ucurv.egg-info/PKG-INFO
+ucurv.egg-info/SOURCES.txt
+ucurv.egg-info/dependency_links.txt
+ucurv.egg-info/requires.txt
+ucurv.egg-info/top_level.txt
