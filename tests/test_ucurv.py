@@ -42,6 +42,11 @@ combinations = [
 
 @pytest.mark.parametrize("shape, cfg", combinations)
 def test_ucurv(shape, cfg):
+    """
+    Tests that the forward transform is perfectly inversed by the backwards transform.
+    Calls the forward and backwards on random data of multiple different shapes and multiple different configurations for the transform.
+    Shapes and configurations are listed above, and all possible pairs are combined together in combinations.
+    """
     data = np.random.rand(*shape)
     Udct = ucurv.Udct(shape, cfg)
     band = ucurv.ucurvfwd(data, Udct)
@@ -51,6 +56,9 @@ def test_ucurv(shape, cfg):
 
 @pytest.mark.parametrize("shape, cfg", combinations)
 def test_vectorize(shape, cfg):
+    """
+    Tests that calling bands2vec, which flattens the dictionary of subbands into a single array, and then vec2bands, which undoes this, reverse each other perfectly.
+    """
     data = np.random.rand(*shape)
     Udct = ucurv.Udct(shape, cfg)
     band = ucurv.ucurvfwd(data, Udct)

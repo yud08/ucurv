@@ -58,7 +58,7 @@ def fftflip(F, dirlist = None):
     Flip and circularly shift an N-D FFT array so that frequency sign is reversed.
 
     This routine performs an axis-wise reversal and roll on the input array
-    to map X(\omega) to X(-\omega) in its FFT representation.  For each
+    to map X(\\omega) to X(-\\omega) in its FFT representation.  For each
     transformed axis, elements are flipped (so that the zero-frequency
     component moves to the end), then rolled by one to restore the zero-frequency
     component to the first position.
@@ -79,7 +79,7 @@ def fftflip(F, dirlist = None):
 
     Notes
     -----
-    - Reversing an axis in FFT output corresponds to replacing \omega with -\omega.
+    - Reversing an axis in FFT output corresponds to replacing \\omega with -\\omega.
     - After `np.flip`, the zero-frequency component moves to the end of the axis.
       `np.roll` by +1 brings it back to index 0.
     - For multi-dimensional FFTs, reversing multiple axes implements sign

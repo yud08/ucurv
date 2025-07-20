@@ -1,0 +1,29 @@
+# pyproject.toml
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ucurv"
+version = "0.1.1"
+description = "Uniform Discrete Curvelet Transform"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.6"
+authors = [
+  { name = "Duy Nguyen", email = "duyn26364@gmail.com" },
+]
+dependencies = [
+  "numpy",
+  "matplotlib",
+  "pytest",
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+urls = { "Homepage" = "https://github.com/yud08/ucurv" }
+
+[tool.setuptools.packages.find]
+
+include = ["ucurv"]
