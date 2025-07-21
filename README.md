@@ -2,11 +2,11 @@
 
 This package implements the Uniform Discrete Curvelet Transform as described in "Uniform discrete curvelet transform" TT Nguyen, H Chauris - IEEE transactions on signal processing, 2010, following the suggestion in https://github.com/PyLops/pylops/wiki/GSoC-2023-Project-Ideas
 
-You construct a Udct object by providing the shape of the data to be transformed, and then the configuration for the transform, i.e how many directional wedges you wish to have at each axis and each scale.
-Provides a forwards and backwards version of the transform. The backward inverses the forward transform.
-
 # What are the curvelet transforms?
 https://en.wikipedia.org/wiki/Curvelet
+
+You construct a Udct object by providing the shape of the data to be transformed, and then the configuration for the transform, i.e how many directional wedges you wish to have at each axis and each scale.
+Provides a forwards and backwards version of the transform. The backward inverses the forward transform.
 
 # Example usage
 ```python
@@ -42,7 +42,7 @@ To run tests, install Pytest in your project root:
 ```bash
 pip install -e .[dev]
 ```
-and then call:
+and then call(from the project root):
 
 ```bash
 pytest
