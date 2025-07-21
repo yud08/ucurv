@@ -38,48 +38,46 @@ def meyer_wavelet(N):
 
 def meyerfwd1d(img, dim):
     """
-    Perform a 1D Meyer wavelet forward transform along a specified axis.
+    Perform a 1-D Meyer wavelet forward transform along a specified axis.
 
-    This applies the Meyer filters in the frequency domain, then
-    splits and downsamples into low and high frequency subbands.
+    This applies Meyer filters in the frequency domain, then splits and
+    downsamples into low and high-frequency sub-bands.
 
     Parameters
     ----------
     img : ndarray
         Input array of arbitrary shape.  The transform is applied along
-        one axis, and all other dimensions are preserved.
+        one axis; all other dimensions are preserved.
     dim : int
-        The axis (0 ≤ `dim` < `img.ndim`) along which to compute the
-        1D Meyer transform.
+        Axis (0 ≤ ``dim`` < ``img.ndim``) along which to compute the
+        1-D Meyer transform.
 
     Returns
     -------
     h1 : ndarray
-        The low# frequency subband.  This has the same shape as `img`
-        except along `dim`, where its length is `N/2` (every even sample).
+        The **low-frequency** sub-band.  Same shape as *img* except
+        along *dim*, where the length is ``N/2`` (even samples).
     h2 : ndarray
-        The high frequency subband.  Same shape as `h1`, but containing
-        the odd indexed samples after filtering.
+        The high frequency sub band (odd samples); shape identical to *h1*.
 
     Notes
     -----
     Internally this function:
-      1. Swaps axis `dim` with the last axis for convenience.
-      2. Computes the length `N` Meyer wavelet filters `f1, f2`.
-      3. FFTs the input along that last axis.
-      4. Multiplies by `f1`/`f2`, IFFTs back to time domain.
-      5. Takes real part and downsamples by 2:
-         - `h1` takes the even indices (`[..., ::2]`),
-         - `h2` takes the odd indices (`[..., 1::2]`).
-      6. Swaps the axes back to restore the original layout.
+
+    1. Swaps axis *dim* with the last axis.
+    2. Computes length ``N`` Meyer filters ``f1`` and ``f2``.
+    3. FFTs the input along that axis.
+    4. Multiplies by ``f1``/``f2`` and IFFTs back.
+    5. Takes the real part and downsamples by 2:
+       ``h1 = [..., ::2]`` (even), ``h2 = [..., 1::2]`` (odd).
+    6. Swaps axes back to restore the original layout.
 
     Examples
     --------
-    import numpy as np
-    x = np.random.randn(100, 200)
-    # transform along axis=1 (columns)
-    low, high = meyerfwd1d(x, dim=1)
-    low.shape, high.shape
+    >>> import numpy as np
+    >>> x = np.random.randn(100, 200)
+    >>> low, high = meyerfwd1d(x, dim=1)
+    >>> low.shape, high.shape
     ((100, 100), (100, 100))
     """
     ldim = img.ndim - 1
@@ -100,47 +98,50 @@ def meyerfwd1d(img, dim):
 
 def meyerinv1d(h1, h2, dim):
     """
-    Perform the 1D inverse Meyer wavelet transform along a specified axis.
+    Inverse 1-D Meyer wavelet transform along a chosen axis.
 
-    Reconstructs the original signal by interleaving low and high frequency
-    subbands, applying Meyer filters in the frequency domain, and summing.
+    The routine reconstructs the original signal by interleaving the
+    low- and high-frequency sub-bands, applying the Meyer synthesis
+    filters in the frequency domain, and summing the results.
 
     Parameters
     ----------
     h1 : ndarray
-        Low frequency subband array.  Its shape matches the original image
-        except along axis `dim`, where its length is N/2.
+        Low-frequency sub-band.  Same shape as the original input except
+        along *dim*, where its length is ``N/2`` (even samples).
     h2 : ndarray
-        High frequency subband array, same shape as `h1`.
+        High-frequency sub-band; shape identical to *h1* (odd samples).
     dim : int
-        The axis (0 ≤ `dim` < `h1.ndim`) along which the forward transform
-        was applied and now is inverted.
+        Axis along which the forward transform was taken
+        (``0 <= dim < h1.ndim``).
 
     Returns
     -------
     imrecon : ndarray
-        The reconstructed array, of the same shape as the original input
-        to `meyerfwd1d`.
+        Reconstructed array with the same shape and ``dtype`` as the
+        original input to :func:`meyerfwd1d`.
 
     Notes
     -----
-    Internally this function:
-      1. Swaps axis `dim` with the last axis for convenience.
-      2. Creates arrays `g1` and `g2` of length N by placing `h1` into even
-         indices (`[..., ::2]`) and `h2` into odd indices (`[..., 1::2]`).
-      3. Computes Meyer wavelet filters `f1, f2` of length N.
-      4. Transforms `g1` and `g2` via FFT along that axis, multiplies by
-         `f1`/`f2`, and sums in the frequency domain.
-      5. Applies the inverse FFT, takes the real part, and scales by 2.
-      6. Swaps axes back to restore the original array layout.
+    Internally the function proceeds as follows:
+
+    1. Swap axis *dim* with the last axis.
+    2. Build two length-``N`` arrays ``g1`` and ``g2`` by placing
+       ``h1`` in the even indices (``[..., ::2]``) and ``h2`` in the
+       odd indices (``[..., 1::2]``).
+    3. Compute Meyer synthesis filters ``f1`` and ``f2`` of length ``N``.
+    4. FFT ``g1`` and ``g2`` along the last axis, multiply by
+       ``f1``/``f2``, and sum in the frequency domain.
+    5. Apply the inverse FFT, take the real part, and scale by 2.
+    6. Swap axes back to restore the original layout.
 
     Examples
     --------
-    import numpy as np
-    x = np.random.randn(64, 128)
-    low, high = meyerfwd1d(x, dim=1)
-    x_rec = meyerinv1d(low, high, dim=1)
-    np.allclose(x, x_rec, atol=1e-6)
+    >>> import numpy as np
+    >>> x = np.random.randn(64, 128)
+    >>> low, high = meyerfwd1d(x, dim=1)
+    >>> x_rec = meyerinv1d(low, high, dim=1)
+    >>> np.allclose(x, x_rec, atol=1e-6)
     True
     """
     ldim = h1.ndim - 1
@@ -164,36 +165,41 @@ def meyerinv1d(h1, h2, dim):
 
 def meyerfwdmd(img):
     """
-    Perform an N-dimensional forward Meyer wavelet transform.
+    N-dimensional forward Meyer wavelet transform.
 
-    Applies 1D Meyer forward filters along each axis of the input array,
-    successively splitting into low- and high-frequency subbands.
+    The routine applies the 1-D forward Meyer filters successively along
+    each axis of the input array, splitting the data into low- and
+    high-frequency sub-bands at every step.
 
     Parameters
     ----------
     img : ndarray
-        Input N-dimensional array to be transformed.  The transform is applied
-        along each axis in turn, starting from axis 0 up to axis N-1.
+        Input array of arbitrary dimensionality.  The transform is applied
+        along axis 0, then axis 1, and so on up to ``img.ndim - 1``.
 
     Returns
     -------
     cband : list of ndarray
-        A list of length 2**N of subband arrays.  Each level of decomposition
-        doubles the number of subbands by splitting each existing band into
-        its low- and high-frequency components.
+        List of length ``2**N`` containing the sub-band arrays, where
+        ``N = img.ndim``.  Each decomposition level doubles the number of
+        bands by splitting every current band into its low- and
+        high-frequency components.
 
     Notes
     -----
-    - The first call splits the input into [h1, h2] along axis 0.
-    - On each subsequent axis `i`, every current subband is further split
-      by `meyerfwd1d` along axis `i`.
+    * **Axis 0** - the first call to :func:`meyerfwd1d` splits *img* into
+      ``[h1, h2]``.
+    * **Axis i ( i ≥ 1 )** - every existing band is split again along
+      axis *i*, so after processing axis *i* the total number of bands
+      is ``2**(i + 1)``.
 
     Examples
     --------
-    import numpy as np
-    x = np.random.randn(8, 8, 8)
-    subbands = meyerfwdmd(x)
-    len(subbands)
+    >>> import numpy as np
+    >>> x = np.random.randn(8, 8, 8)   # 3-D array (N = 3)
+    >>> subbands = meyerfwdmd(x)
+    >>> len(subbands)
+    8
     """
     band = [img]
     dim = len(img.shape)
@@ -208,36 +214,44 @@ def meyerfwdmd(img):
 
 def meyerinvmd(band):
     """
-    Perform the inverse N-dimensional Meyer wavelet transform.
+    Inverse *N*-dimensional Meyer wavelet transform.
 
-    Reconstructs the original N-dimensional array from its 2**N subbands
-    by iteratively merging low- and high-frequency components along each axis.
+    Reconstruct the original array from the ``2**N`` sub-bands returned by
+    :func:`meyerfwdmd` by successively merging low- and high-frequency
+    components along each axis.
 
     Parameters
     ----------
-    band : list of ndarray
-        List of 2**N subband arrays produced by `meyerfwdmd`.  The order must
-        match the output of `meyerfwdmd` for the same input dimensions.
+    band : list[numpy.ndarray]
+        Sequence of ``2**N`` sub-band arrays produced by
+        :func:`meyerfwdmd`.  The order **must** match exactly the order
+        returned by that function for the same input dimensions.
 
     Returns
     -------
-    img_recon : ndarray
-        The reconstructed N-dimensional array, matching the shape of the original
-        input passed to `meyerfwdmd`.
+    img_recon : numpy.ndarray
+        Array with the same shape and ``dtype`` as the data that was
+        passed to :func:`meyerfwdmd`.
 
     Notes
     -----
-    - Reconstruction proceeds in reverse axis order: starting from axis N-1
-      back down to axis 0.
-    - At each axis `i`, subbands are paired (low, high) and merged via `meyerinv1d`.
+    The reconstruction proceeds in **reverse axis order**:
+
+    1. Start with axis ``N - 1``; pair each low/high band and merge them
+       with :func:`meyerinv1d` along that axis, halving the number of
+       bands.
+    2. Repeat the pairing-and-merge step for the next smaller axis.
+    3. Continue until only one band remains—the fully reconstructed
+       signal.
 
     Examples
     --------
-    import numpy as np
-    x = np.random.randn(8, 8, 8)
-    subbands = meyerfwdmd(x)
-    x_rec = meyerinvmd(subbands)
-    np.allclose(x, x_rec, atol=1e-6)
+    >>> import numpy as np
+    >>> x = np.random.randn(8, 8, 8)
+    >>> subbands = meyerfwdmd(x)
+    >>> x_rec = meyerinvmd(subbands)
+    >>> np.allclose(x, x_rec, atol=1e-6)
+    True
     """
     dim = len(band[0].shape)
     for i in range(dim-1, -1, -1):
