@@ -1,5 +1,6 @@
 import numpy as np
 
+#used as example data for ucurv backwards and forwards transform
 def zoneplate(sz):
     """
     Generate an N‑dimensional zone plate pattern.

@@ -1,11 +1,12 @@
 *.pyc 
 # build artifacts
 /dist/
+/build/
 /*.egg-info/
+/docs/build
+/ucurv/_version.py
+/.pytest_cache/
 
 # Python caches
 __pycache__/
 *.py[cod]
-
-ucurv/_version.py
-/build/
