@@ -47,3 +47,23 @@ and then call(from the project root):
 ```bash
 pytest
 ```
+
+# Creating documentation(WIP)
+Install Sphinx in your project root:
+```bash
+pip install -e .[dev]
+```
+and then make the documentation with:
+
+```bash
+make clean html
+```
+
+Access it from `docs\build\html\index.html`.
+If you wish to view it, either use the Live Server extension, or alternatively call:
+
+```bash
+python -m http.server --directory docs/build/html 8000
+```
+and go on:
+http://localhost:8000/ 

@@ -7,7 +7,7 @@ all: test
 # Install the required Python packages
 install:
 	python -m pip install --upgrade pip
-	python -m pip install numpy scipy matplotlib Pylops
+	python -m pip install numpy scipy matplotlib Pylops Sphinx
 
 # Run pytest (depends on install)
 test: install
