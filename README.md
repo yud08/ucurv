@@ -34,7 +34,7 @@ pip install ucurv
 ```
 
 # Running tests
-We use [pytest](https://docs.pytest.org/) for unit testing
+We use [pytest](https://docs.pytest.org/) for unit testing. 
 To run tests, install Pytest in your project root:
 ```bash
 pip install -e .[dev]
