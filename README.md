@@ -48,8 +48,8 @@ and then call(from the project root):
 pytest
 ```
 
-# Creating documentation(WIP)
-Install Sphinx in your project root:
+# Creating documentation with Sphinx(WIP)
+Install Sphinx in your project root(same as above):
 ```bash
 pip install -e .[dev]
 ```
@@ -65,5 +65,5 @@ If you wish to view it, either use the Live Server extension, or alternatively c
 ```bash
 python -m http.server --directory docs/build/html 8000
 ```
-and go on:
+and go onto:
 http://localhost:8000/ 
