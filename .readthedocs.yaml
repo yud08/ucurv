@@ -16,4 +16,4 @@ python:
     - method: pip
       path: .
     # doc‑only dependencies
-    - requirements: docs/requirements.txt
+    # - requirements: docs/requirements.txt
