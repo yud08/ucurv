@@ -15,6 +15,5 @@ python:
     # install your package in editable mode (optional but common)
     - method: pip
       path: .
-      editable: true
     # doc‑only dependencies
     - requirements: docs/requirements.txt
