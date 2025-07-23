@@ -67,3 +67,18 @@ def test_vectorize(shape, cfg):
     recon = ucurv.ucurvinv(unflat, Udct)
     are_close = np.all(np.isclose(data, recon, atol=eps))
     assert(are_close == True)
+
+def test_fun_meyer():
+    """
+    Tests that calling fun_meyer with a range of incorrect param data will correctly raise an exception
+    """
+    with pytest.raises(Exception):
+        ucurv.fun_meyer([], [1, 3, 4])
+    with pytest.raises(Exception):
+        ucurv.fun_meyer([], [0, 2, 4, 5, 6])
+    with pytest.raises(Exception):
+        ucurv.fun_meyer([], [3, 1, 4, 2]) 
+    with pytest.raises(Exception):
+        ucurv.fun_meyer([], [1, 2, 4, 3.5]) 
+    with pytest.raises(Exception):
+        ucurv.fun_meyer([], [5.6, 3.5, 7, 8]) 

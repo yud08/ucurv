@@ -21,6 +21,9 @@ def fun_meyer(x, param):
     w : ndarray
         The window values evaluated at each point in `x`.
     """
+    if not (len(param) == 4 and param[0] < param[1] < param[2] < param[3]):
+        raise Exception("param should be of size 4, and p[0] < p[1] < p[2] < p[3]")
+    
     p = np.array([-20,70,-84, 35, 0, 0, 0, 0])
     # x = np.linspace(0,5)
     y = np.ones_like(x)
