@@ -1,3 +1,5 @@
+from .backend import ncp as _ncp_func
+ncp = _ncp_func() 
 import numpy as np
 
 #used as example data for ucurv backwards and forwards transform
@@ -30,23 +32,23 @@ def zoneplate(sz):
     if len(sz) == 1:
         raise ValueError("Zoneplate does not work with 1D")
     if len(sz) == 2:
-        x_ = np.linspace(-sz[0]/2, sz[0]/2, sz[0] )
-        y_ = np.linspace(-sz[1]/2, sz[1]/2, sz[1] )
-        x, y = np.meshgrid(x_, y_, indexing='ij')
-        rsq = np.cos(np.pi/np.max(sz)*(x**2 + y**2) )
+        x_ = ncp.linspace(-sz[0]/2, sz[0]/2, sz[0] )
+        y_ = ncp.linspace(-sz[1]/2, sz[1]/2, sz[1] )
+        x, y = ncp.meshgrid(x_, y_, indexing='ij')
+        rsq = ncp.cos(ncp.pi/ncp.max(sz)*(x**2 + y**2) )
     if len(sz) == 3:
-        x_ = np.linspace(-sz[0]/2, sz[0]/2, sz[0] )
-        y_ = np.linspace(-sz[1]/2, sz[1]/2, sz[1] )
-        z_ = np.linspace(-sz[2]/2, sz[2]/2, sz[2] )
-        x, y, z = np.meshgrid(x_, y_, z_, indexing='ij')
-        rsq = np.cos(np.pi/np.max(sz)*(x**2 + y**2 + z**2 ) )
+        x_ = ncp.linspace(-sz[0]/2, sz[0]/2, sz[0] )
+        y_ = ncp.linspace(-sz[1]/2, sz[1]/2, sz[1] )
+        z_ = ncp.linspace(-sz[2]/2, sz[2]/2, sz[2] )
+        x, y, z = ncp.meshgrid(x_, y_, z_, indexing='ij')
+        rsq = ncp.cos(ncp.pi/ncp.max(sz)*(x**2 + y**2 + z**2 ) )
     if len(sz) == 4:
-        x_ = np.linspace(-sz[0]/2, sz[0]/2, sz[0] )
-        y_ = np.linspace(-sz[1]/2, sz[1]/2, sz[1] )
-        z_ = np.linspace(-sz[2]/2, sz[2]/2, sz[2] )
-        p_ = np.linspace(-sz[3]/2, sz[3]/2, sz[3] )
-        x, y, z, p = np.meshgrid(x_, y_, z_, p_, indexing='ij')
-        rsq = np.cos(np.pi/np.max(sz)*(x**2 + y**2 + z**2 + p**2 ) )
+        x_ = ncp.linspace(-sz[0]/2, sz[0]/2, sz[0] )
+        y_ = ncp.linspace(-sz[1]/2, sz[1]/2, sz[1] )
+        z_ = ncp.linspace(-sz[2]/2, sz[2]/2, sz[2] )
+        p_ = ncp.linspace(-sz[3]/2, sz[3]/2, sz[3] )
+        x, y, z, p = ncp.meshgrid(x_, y_, z_, p_, indexing='ij')
+        rsq = ncp.cos(ncp.pi/ncp.max(sz)*(x**2 + y**2 + z**2 + p**2 ) )
     if len(sz) > 4:
         raise ValueError("Zoneplate is not implemented for higher dimensions")
         
