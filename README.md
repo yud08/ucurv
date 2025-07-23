@@ -48,7 +48,10 @@ and then call(from the project root):
 pytest
 ```
 
-# Creating documentation with Sphinx(WIP)
+# Documentation
+Access the documentation at https://ucurv.readthedocs.io/en/latest/.
+
+# Creating your own documentation with Sphinx
 Install Sphinx in your project root(same as above):
 ```bash
 pip install -e .[dev]
