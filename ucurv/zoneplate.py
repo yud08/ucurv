@@ -3,7 +3,7 @@ import numpy as np
 #used as example data for ucurv backwards and forwards transform
 def zoneplate(sz):
     """
-    Generate an N‑dimensional zone plate pattern.
+    Generate an N-dimensional zone plate pattern.
 
     Parameters
     ----------
@@ -14,7 +14,7 @@ def zoneplate(sz):
     Returns
     -------
     rsq : ndarray
-        An N‑dimensional array of shape `tuple(sz)` containing the zone plate values
+        An N-dimensional array of shape `tuple(sz)` containing the zone plate values
         computed as
 
             cos(pi / max(sz) * (x_1**2 + x_2**2 + ... + x_N**2)),
