@@ -1,3 +1,5 @@
+from .backend import ncp as _ncp_func
+ncp = _ncp_func() 
 import math
 import numpy as np
 from .util import fun_meyer
@@ -35,14 +37,14 @@ def tan_theta_grid(S1, S2):
     Create a grid approximate the tan theta function as described in (28) of the paper
     """
     # first grid
-    x1, x2 = np.meshgrid(S2, S1)
+    x1, x2 = ncp.meshgrid(S2, S1)
 
-    t1 = np.zeros_like(x1)
-    ind = np.logical_and(x2 != 0, np.abs(x1) <= np.abs(x2))
+    t1 = ncp.zeros_like(x1)
+    ind = ncp.logical_and(x2 != 0, ncp.abs(x1) <= ncp.abs(x2))
     t1[ind] = -x1[ind] / x2[ind]
 
-    t2 = np.zeros_like(x1)
-    ind = np.logical_and(x1 != 0, np.abs(x2) < np.abs(x1))
+    t2 = ncp.zeros_like(x1)
+    ind = ncp.logical_and(x1 != 0, ncp.abs(x2) < ncp.abs(x1))
     t2[ind] = x2[ind] / x1[ind]
     t3 = t2.copy()
     t3[t2 < 0] = t2[t2 < 0] + 2
@@ -57,7 +59,7 @@ def fftflip(F, dirlist = None):
     """
     Flip and circularly shift an N-D FFT array so that frequency sign is reversed.
 
-    This routine performs an axis-wise reversal and roll on the input array
+    This routine performs an axis-wise reversal and roll on the incput array
     to map X(\\omega) to X(-\\omega) in its FFT representation.  For each
     transformed axis, elements are flipped (so that the zero-frequency
     component moves to the end), then rolled by one to restore the zero-frequency
@@ -66,7 +68,7 @@ def fftflip(F, dirlist = None):
     Parameters
     ----------
     F : ndarray
-        Input array in the frequency domain (FFT output).  Can be of any dimensionality.
+        Incput array in the frequency domain (FFT output).  Can be of any dimensionality.
     dirlist : int or sequence of ints, optional
         Axis or list of axes over which to apply the fftflip.  If None (default), all
         axes of `F` will be processed.
@@ -80,8 +82,8 @@ def fftflip(F, dirlist = None):
     Notes
     -----
     - Reversing an axis in FFT output corresponds to replacing \\omega with -\\omega.
-    - After `np.flip`, the zero-frequency component moves to the end of the axis.
-      `np.roll` by +1 brings it back to index 0.
+    - After `ncp.flip`, the zero-frequency component moves to the end of the axis.
+      `ncp.roll` by +1 brings it back to index 0.
     - For multi-dimensional FFTs, reversing multiple axes implements sign
       inversion in each frequency dimension.
     """
@@ -89,17 +91,17 @@ def fftflip(F, dirlist = None):
     dim = Fc.ndim
     if dirlist is None:
         dirlist = list(range(dim))
-    shiftvec = np.zeros(dim)
+    shiftvec = ncp.zeros(dim)
     if type(dirlist) is list:
         for dir in dirlist:
             shiftvec[dir] = 1
-            Fc = np.flip(Fc, dir)
-            Fc = np.roll(Fc, 1, axis=dir)
+            Fc = ncp.flip(Fc, dir)
+            Fc = ncp.roll(Fc, 1, axis=dir)
     if type(dirlist) is int:
         dir = dirlist
         shiftvec[dir] = 1
-        Fc = np.flip(Fc, dir)
-        Fc = np.roll(Fc, 1, axis=dir)
+        Fc = ncp.flip(Fc, dir)
+        Fc = ncp.roll(Fc, 1, axis=dir)
     return Fc
 
 def angle_fun(Mgrid, n, alpha, dir, bandpass = None):
@@ -126,16 +128,16 @@ def angle_fun(Mgrid, n, alpha, dir, bandpass = None):
         flipped inverse (`n/2 <= id < n`) Meyer windows for each angular sector.
     """
     angd = 2/n
-    ang = angd*np.array([-alpha, alpha, 1-alpha, 1+alpha])
+    ang = angd*ncp.array([-alpha, alpha, 1-alpha, 1+alpha])
     Mang = [[] for i in range(n) ]
     tmp = []
-    sp = np.array(Mgrid.shape)
+    sp = ncp.array(Mgrid.shape)
     for id in range(math.ceil(n/2)):
         ang2 = -1 + id*angd + ang
         x = fun_meyer(Mgrid, ang2)
         if bandpass is not None:
             x = x*bandpass
-        x = np.roll(x, 3*sp//4, (0,1) )
+        x = ncp.roll(x, 3*sp//4, (0,1) )
         Mang[id] = x.copy()
         Mang[n-1-id] = fftflip(x, dir)
         
@@ -146,14 +148,14 @@ def angle_kron(F, dr, sz):
     This function replicate the 2D array F at dimension dr to match the size sz
 
     Constructs a multi-dimensional array by taking the Kronecker product of the
-    flattened input `F` with an all-ones array, then reshaping and moving axes
+    flattened incput `F` with an all-ones array, then reshaping and moving axes
     so that the original 2D data appear along dimensions `dr` within the final
     shape `sz`.
 
     Parameters
     ----------
     F : ndarray
-        A 2D input array of shape (m, n) to be replicated.
+        A 2D incput array of shape (m, n) to be replicated.
     dr : tuple of int
         Length-2 tuple specifying the target axes in the output array where
         the original dimensions of `F` should be placed.
@@ -170,20 +172,20 @@ def angle_kron(F, dr, sz):
     Raises
     ------
     ValueError
-        If `np.prod(sz)` is not divisible by `np.prod(F.shape)`.
+        If `ncp.prod(sz)` is not divisible by `ncp.prod(F.shape)`.
     """
     sp = list(F.shape)
-    sp2 = int(np.prod(sz)/np.prod(F.shape))
+    sp2 = int(ncp.prod(sz)/ncp.prod(F.shape))
     # remove dr element from sz
     sz2 = list(sz)
     sz2 = [i for j, i in enumerate(sz) if j not in dr]
     # now append sz2 to sp
     sp = sp + sz2
     # Fk is the replicated version of F, along the dimension other than dr[0,1]
-    Fk = np.reshape(np.kron(F.flatten(), np.ones( sp2 )),  sp)
+    Fk = ncp.reshape(ncp.kron(F.flatten(), ncp.ones( sp2 )),  sp)
 
     # Move the dimensions 0,1 to dr
-    Fk = np.moveaxis(Fk, [0 ,1] , dr)
+    Fk = ncp.moveaxis(Fk, [0 ,1] , dr)
     return Fk
 
 def downsamp(band, samp, shift = None):
@@ -191,7 +193,7 @@ def downsamp(band, samp, shift = None):
     Downsample a N-D array by length N of power-2 integers 
     """
     if shift is None:
-        shift = np.zeros(len(band.shape), dtype = int)
+        shift = ncp.zeros(len(band.shape), dtype = int)
     if len(samp) == 2:
         return band[shift[0]::samp[0], shift[1]::samp[1]]
     if len(samp) == 3:
@@ -206,9 +208,9 @@ def upsamp(band, samp, shift = None):
     Upsample a N-D array by length N of power-2 integers 
     """    
     if shift is None:
-        shift = np.zeros(len(band.shape), dtype = int)
-    sp = np.array(band.shape)*samp
-    bandup = np.zeros(sp.astype(int)).astype(complex)
+        shift = ncp.zeros(len(band.shape), dtype = int)
+    sp = ncp.array(band.shape)*samp
+    bandup = ncp.zeros(sp.astype(int)).astype(complex)
     if len(samp) == 2:
         bandup[shift[0]::samp[0], shift[1]::samp[1]] = band
     if len(samp) == 3:
@@ -220,7 +222,7 @@ def upsamp(band, samp, shift = None):
 
     return bandup
 
-r = np.pi*np.array([1/3, 2/3, 2/3, 4/3])
+r = ncp.pi*ncp.array([1/3, 2/3, 2/3, 4/3])
 alpha = 0.1
 
 ####  class to hold all curvelet windows and other based on transform configuration
@@ -229,7 +231,7 @@ class Udct:
         self.name = "ucurv"
         # 
         if high != 'curvelet':
-            self.sz = tuple(np.array(sz)//2)
+            self.sz = tuple(ncp.array(sz)//2)
         else:
             self.sz = tuple(sz)
 
@@ -245,14 +247,14 @@ class Udct:
 
         self.Sampling = {}
         # calculate output len
-        clen = np.prod(np.array(self.sz))//((2**self.dim)**(self.res-1))
+        clen = ncp.prod(ncp.array(self.sz))//((2**self.dim)**(self.res-1))
         self.len = clen
         for i in range(self.res):
             clen = clen*((2**self.dim)**i)
             self.len = self.len + clen*self.dim*3**(self.dim-1)//2**(self.dim-1)
 
         # create the subsampling vectors
-        self.Sampling[(0)]  = 2**(res-1)*np.ones(dim, dtype = int) 
+        self.Sampling[(0)]  = 2**(res-1)*ncp.ones(dim, dtype = int) 
         for rs in range(res):
             for ipyr in range(dim):
                 dmat = []
@@ -261,30 +263,30 @@ class Udct:
                         dmat.append(2**(res-rs))
                     else:
                         dmat.append(2*(cfg[rs][idir]//3)*2**(res-rs-1))  
-                self.Sampling[(rs,ipyr)] = np.array(dmat, dtype = int)
+                self.Sampling[(rs,ipyr)] = ncp.array(dmat, dtype = int)
 
         Sgrid = [ [] for i in range(dim) ]
 
         for ind in range(dim):
-            Sgrid[ind] = np.linspace(-1.5 * np.pi, 0.5 * np.pi - np.pi / (self.sz[ind]  / 2), self.sz[ind]) 
+            Sgrid[ind] = ncp.linspace(-1.5 * ncp.pi, 0.5 * ncp.pi - ncp.pi / (self.sz[ind]  / 2), self.sz[ind]) 
 
         f1d = {}
         # print(f1d)
         for ind in range(dim):
             for rs in range(res):
-                f1d[ (rs, ind) ] = fun_meyer(np.abs(Sgrid[ind]), [-2, -1, r[0]/2**(res-1-rs), r[1]/2**(res-1-rs)] )
+                f1d[ (rs, ind) ] = fun_meyer(ncp.abs(Sgrid[ind]), [-2, -1, r[0]/2**(res-1-rs), r[1]/2**(res-1-rs)] )
 
-            f1d[ (res, ind )] = fun_meyer(np.abs(Sgrid[ind]), [-2, -1, r[2], r[3] ])
+            f1d[ (res, ind )] = fun_meyer(ncp.abs(Sgrid[ind]), [-2, -1, r[2], r[3] ])
 
         SLgrid = [ [] for i in range(dim) ]
         for ind in range(dim):
-            SLgrid[ind] = np.linspace(-np.pi,  np.pi - np.pi / (self.sz[ind]  / 2), self.sz[ind])
+            SLgrid[ind] = ncp.linspace(-ncp.pi,  ncp.pi - ncp.pi / (self.sz[ind]  / 2), self.sz[ind])
 
         # fl1d = []
-        FL = np.ones([1])
+        FL = ncp.ones([1])
         for ind in range(dim):
-            fl1d = fun_meyer(np.abs(SLgrid[ind]), [-2, -1, r[0]/2**(res-1), r[1]/2**(res-1)] ) 
-            FL = np.kron(FL, fl1d.flatten() )
+            fl1d = fun_meyer(ncp.abs(SLgrid[ind]), [-2, -1, r[0]/2**(res-1), r[1]/2**(res-1)] ) 
+            FL = ncp.kron(FL, fl1d.flatten() )
             # print(FL.shape)
         FL = FL.reshape(self.sz)
 
@@ -303,13 +305,13 @@ class Udct:
                     if idir == ind : # skip the dimension that is the same as the pyramid
                         continue
                     
-                    ndir = np.array([ind, idir]) # ndir are the dimension in the pyramid 
+                    ndir = ncp.array([ind, idir]) # ndir are the dimension in the pyramid 
                     # print(ndir, cfg[rs][ idir] )
                     Mg0 = tan_theta_grid(Sgrid[ndir[0]], Sgrid[ndir[1] ] )
 
                     # create the bandpass function
-                    BP1 = np.outer(f1d[(rs,ind)], f1d[(rs,idir)] )
-                    BP2 = np.outer(f1d[(rs+1,ind)], f1d[(rs+1,idir)] )
+                    BP1 = ncp.outer(f1d[(rs,ind)], f1d[(rs,idir)] )
+                    BP2 = ncp.outer(f1d[(rs+1,ind)], f1d[(rs+1,idir)] )
                     bandpass = (BP2 - BP1)**(1./(dim-1.))
 
                     # create the 2D angle function, in the vertical 2D pyramid
@@ -339,7 +341,7 @@ class Udct:
                 dlist = list(dlists[ipyr])
 
                 for alist in id_angle_list:
-                    subband = np.ones(self.sz)
+                    subband = ncp.ones(self.sz)
                     for idir, aid in enumerate(alist):
                         angkron = angle_kron(Mang2[(rs, ipyr, dlist[idir])][aid] , [ipyr, dlist[idir]], self.sz)
                         subband = subband*angkron
@@ -348,24 +350,24 @@ class Udct:
                     Msubwin[tuple([rs, ipyr] + alist)] = subband.copy()
 
         #################################
-        sumall = np.zeros(self.sz)
+        sumall = ncp.zeros(self.sz)
         for id, subwin in Msubwin.items():
             sumall = sumall + subwin
-            # print(id, np.max(subwin), np.max(sumall))
+            # print(id, ncp.max(subwin), ncp.max(sumall))
 
         sumall = sumall + fftflip(sumall)
         sumall = sumall + FL
 
         self.Msubwin = {}
         for id, subwin in Msubwin.items():
-            win = np.fft.fftshift(np.sqrt(2*np.prod(self.Sampling[(id[0], id[1])]) *subwin / sumall))
+            win = ncp.fft.fftshift(ncp.sqrt(2*ncp.prod(self.Sampling[(id[0], id[1])]) *subwin / sumall))
             if sparse:
-                self.Msubwin[id] = ( np.nonzero(win), win[np.nonzero(win)] )
+                self.Msubwin[id] = ( ncp.nonzero(win), win[ncp.nonzero(win)] )
             else:
                 self.Msubwin[id] = win
-        win  = np.sqrt(np.prod(self.Sampling[(0)]))*np.fft.fftshift(np.sqrt(FL/sumall))        
+        win  = ncp.sqrt(ncp.prod(self.Sampling[(0)]))*ncp.fft.fftshift(ncp.sqrt(FL/sumall))        
         if sparse:
-            self.FL = ( np.nonzero(win), win[np.nonzero(win)] )
+            self.FL = ( ncp.nonzero(win), win[ncp.nonzero(win)] )
         else:
             self.FL = win
 
@@ -377,7 +379,7 @@ def ucurvfwd(img, udct):
     # FL = udct.FL
     Sampling = udct.Sampling
     if udct.sparse:
-        FL = np.zeros(udct.sz)
+        FL = ncp.zeros(udct.sz)
         FL[udct.FL[0]] = udct.FL[1]
     else:
         FL = udct.FL    
@@ -386,37 +388,37 @@ def ucurvfwd(img, udct):
         band = meyerfwdmd(img)
         for i, band in enumerate(band):
             if i == 0:
-                imf = np.fft.fftn(band)
+                imf = ncp.fft.fftn(band)
             else:    
                 imband[(udct.res, i)] = band
     else:
-        imf = np.fft.fftn(img)
+        imf = ncp.fft.fftn(img)
 
     if udct.complex:
-        bandfilt = np.fft.ifftn(imf*FL)
+        bandfilt = ncp.fft.ifftn(imf*FL)
         imband[(0,)] = downsamp(bandfilt, Sampling[(0)])
         for id, subwin in Msubwin.items():
             if udct.sparse:
-                sbwin = np.zeros(udct.sz)
+                sbwin = ncp.zeros(udct.sz)
                 sbwin[subwin[0]] = subwin[1]
                 subwin = sbwin
-            bandfilt = np.sqrt(0.5)*np.fft.ifftn(imf *subwin)
+            bandfilt = ncp.sqrt(0.5)*ncp.fft.ifftn(imf *subwin)
             imband[id] = downsamp(bandfilt, Sampling[(id[0], id[1])])
             id2 = list(id)
             id2[1] = id2[1] + udct.dim
-            bandfilt = np.sqrt(0.5)*np.fft.ifftn(imf *fftflip(subwin))
+            bandfilt = ncp.sqrt(0.5)*ncp.fft.ifftn(imf *fftflip(subwin))
             imband[tuple(id2)] = downsamp(bandfilt, Sampling[(id[0], id[1])])
 
     else:    
-        bandfilt = np.real(np.fft.ifftn(imf*FL))
-        imband[(0,)] = downsamp(bandfilt, Sampling[(0)]) # np.real(np.fft.ifftn(imf*FL))
+        bandfilt = ncp.real(ncp.fft.ifftn(imf*FL))
+        imband[(0,)] = downsamp(bandfilt, Sampling[(0)]) # ncp.real(ncp.fft.ifftn(imf*FL))
         for id, subwin in Msubwin.items():
             if udct.sparse:
-                sbwin = np.zeros(udct.sz)
+                sbwin = ncp.zeros(udct.sz)
                 sbwin[subwin[0]] = subwin[1]
                 subwin = sbwin
 
-            bandfilt = np.fft.ifftn(imf *subwin)
+            bandfilt = ncp.fft.ifftn(imf *subwin)
             # samp = Sampling[(id[0], id[1])]
             # imband[id] = bandfilt[::samp[0], ::samp[1]]
             imband[id] = downsamp(bandfilt, Sampling[(id[0], id[1])])
@@ -432,35 +434,35 @@ def ucurvinv(imband, udct):
     imlow = upsamp(imband[(0,)], Sampling[(0)])
 
     if udct.sparse:
-        FL = np.zeros(udct.sz)
+        FL = ncp.zeros(udct.sz)
         FL[udct.FL[0]] = udct.FL[1]
     else:
         FL = udct.FL    
 
     if udct.complex:
-        recon = np.fft.ifftn( np.fft.fftn(imlow) * FL)
+        recon = ncp.fft.ifftn( ncp.fft.fftn(imlow) * FL)
     else:
-        recon = np.real(np.fft.ifftn( np.fft.fftn(imlow) * FL) )
+        recon = ncp.real(ncp.fft.ifftn( ncp.fft.fftn(imlow) * FL) )
     for id, subwin in Msubwin.items():
         #
         if udct.high != 'curvelet' and id[0] == udct.res :
             continue
 
         if udct.sparse:
-            sbwin = np.zeros(udct.sz)
+            sbwin = ncp.zeros(udct.sz)
             sbwin[subwin[0]] = subwin[1]
             subwin = sbwin
 
         if udct.complex:
             bandup = upsamp(imband[id], Sampling[(id[0], id[1])])
-            recon = recon + np.sqrt(0.5)*np.fft.ifftn( np.fft.fftn(bandup) * subwin )
+            recon = recon + ncp.sqrt(0.5)*ncp.fft.ifftn( ncp.fft.fftn(bandup) * subwin )
             id2 = list(id)
             id2[1] = id2[1] + udct.dim
             bandup = upsamp(imband[tuple(id2)], Sampling[(id[0], id[1])])
-            recon = recon + np.sqrt(0.5)*np.fft.ifftn( np.fft.fftn(bandup) * fftflip(subwin) )
+            recon = recon + ncp.sqrt(0.5)*ncp.fft.ifftn( ncp.fft.fftn(bandup) * fftflip(subwin) )
         else:
             bandup = upsamp(imband[id], Sampling[(id[0], id[1])])
-            recon = recon + np.real(np.fft.ifftn( np.fft.fftn(bandup) * subwin ))
+            recon = recon + ncp.real(ncp.fft.ifftn( ncp.fft.fftn(bandup) * subwin ))
             
     if udct.high == 'wavelet':
         band = [recon]
