@@ -29,17 +29,6 @@ dependencies = [
   "matplotlib",
 ]
 
-[project.optional-dependencies]
-
-dev = [                             # pip install ucurv[dev]
-  "pytest>=7.4",
-  "pytest-cov",                     # if you want coverage
-] 
-
-gpu = [                             # pip install ucurv[gpu]
-  "cupy>=12.0",                     # only users with CUDA will take this
-]
-
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
@@ -52,3 +41,15 @@ Homepage = "https://github.com/yud08/ucurv"
 [tool.setuptools.packages.find]
 
 include = ["ucurv"]
+
+[project.optional-dependencies]
+
+dev = [                             # pip install ucurv[dev]
+  "pytest>=7.4",
+  "pytest-cov",                     # if you want coverage
+] 
+
+gpu = [                             # pip install ucurv[gpu]
+  "cupy>=12.0",                     # only users with CUDA will take this
+]
+

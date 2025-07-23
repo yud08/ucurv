@@ -6,6 +6,7 @@
 /docs/build
 /ucurv/_version.py
 /.pytest_cache/
+/Pylops/
 
 # Python caches
 __pycache__/
