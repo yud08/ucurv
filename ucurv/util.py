@@ -89,18 +89,26 @@ def vec2bands(imband, udct):
     uncompressed : dict
         Mapping from subband identifier (tuple) to ndarray of complex coefficients,
         reconstructed to the appropriate shape.
-    """
-    imSz = ncp.array(udct.sz)//2**(udct.res - 1)
+    """            
+    # imSz = ncp.array(udct.sz)//2**(udct.res - 1)
+    # # first is the low band
+    # uncompressed = {(0,) :ncp.reshape(imband[:ncp.prod(imSz)], imSz)}
+    # p = ncp.prod(imSz)
+
+    imSz = tuple(sz_i // (2 ** (udct.res - 1)) for sz_i in udct.sz)
+    count = math.prod(imSz)
     # first is the low band
-    uncompressed = {(0,) :ncp.reshape(imband[:ncp.prod(imSz)], imSz)}
-    p = ncp.prod(imSz)
+    uncompressed = { (0,): ncp.reshape(imband[:count], imSz) }
+    p = count
     for id in udct.Msubwin.keys():
         #if id == 0: continue
-        imSz = udct.sz // udct.Sampling[(id[0], id[1])]
-        c = imband[p:p + 2 * ncp.prod(imSz)]
+        sampling = udct.Sampling[(id[0], id[1])].tolist()  
+        imSz = tuple(sz_i // s for sz_i, s in zip(udct.sz, sampling))
+        length = math.prod(imSz)           
+        c = imband[p:p + 2 * length]        
         c = [complex(c[i], c[i + 1]) for i in range(0, len(c), 2)]
-        uncompressed[id] = ncp.reshape(c, imSz)
-        p += 2 * ncp.prod(imSz)
+        uncompressed[id] = ncp.reshape(ncp.array(c, dtype=complex)   , imSz)
+        p += 2 * length
     return uncompressed
 
 def ucurv2d_show(imband, udct):

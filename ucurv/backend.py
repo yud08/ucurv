@@ -32,9 +32,6 @@ _backend: _BackendLiteral = os.getenv("UCURV_BACKEND", "auto").lower()  # user h
 _backend_module: ModuleType | None = None                               # cache
 
 
-# ---------------------------------------------------------------------------
-# CORE LOGIC
-# ---------------------------------------------------------------------------
 def _resolve_backend() -> ModuleType:
     """Resolve once, cache in `_backend_module`, then return it."""
     global _backend_module
@@ -48,11 +45,11 @@ def _resolve_backend() -> ModuleType:
     elif _backend == "cupy":
         mod = importlib.import_module("cupy")  # will raise if missing
 
-    else:  # "auto"  → prefer CuPy if present, else NumPy
+    else:  # "auto"  → prefer Numpy 
         try:
-            mod = importlib.import_module("cupy")
-        except ModuleNotFoundError:
             mod = importlib.import_module("numpy")
+        except ModuleNotFoundError:
+            raise Exception("Numpy is not installed")
 
     _backend_module = mod
     return mod
@@ -90,3 +87,5 @@ def set_backend(name: _BackendLiteral) -> None:
         )
 
     _backend = name
+
+#set_backend("cupy")
