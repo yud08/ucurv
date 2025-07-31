@@ -175,7 +175,7 @@ def angle_kron(F, dr, sz):
         If `ncp.prod(sz)` is not divisible by `ncp.prod(F.shape)`.
     """
     sp = list(F.shape)
-    sp2 = int(ncp.prod(sz)/ncp.prod(F.shape))
+    sp2 = int(ncp.prod(ncp.array(sz))/ncp.prod(ncp.array(F.shape)))
     # remove dr element from sz
     sz2 = list(sz)
     sz2 = [i for j, i in enumerate(sz) if j not in dr]
@@ -210,7 +210,8 @@ def upsamp(band, samp, shift = None):
     if shift is None:
         shift = ncp.zeros(len(band.shape), dtype = int)
     sp = ncp.array(band.shape)*samp
-    bandup = ncp.zeros(sp.astype(int)).astype(complex)
+    shape = tuple(int(x) for x in sp)   # works whether sp is list, np.ndarray, or cp.ndarray
+    bandup = ncp.zeros(shape, dtype=complex)
     if len(samp) == 2:
         bandup[shift[0]::samp[0], shift[1]::samp[1]] = band
     if len(samp) == 3:
@@ -305,9 +306,8 @@ class Udct:
                     if idir == ind : # skip the dimension that is the same as the pyramid
                         continue
                     
-                    ndir = ncp.array([ind, idir]) # ndir are the dimension in the pyramid 
                     # print(ndir, cfg[rs][ idir] )
-                    Mg0 = tan_theta_grid(Sgrid[ndir[0]], Sgrid[ndir[1] ] )
+                    Mg0 = tan_theta_grid(Sgrid[ind], Sgrid[idir] )
 
                     # create the bandpass function
                     BP1 = ncp.outer(f1d[(rs,ind)], f1d[(rs,idir)] )
@@ -392,7 +392,7 @@ def ucurvfwd(img, udct):
             else:    
                 imband[(udct.res, i)] = band
     else:
-        imf = ncp.fft.fftn(img)
+        imf = ncp.fft.fftn(ncp.array(img))
 
     if udct.complex:
         bandfilt = ncp.fft.ifftn(imf*FL)
