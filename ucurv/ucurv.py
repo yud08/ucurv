@@ -234,6 +234,7 @@ class Udct:
     def __init__(self, sz, cfg, complex = False, sparse = False, high = 'curvelet', engine: str = "auto"):
         ncp = get_module(engine)
         self.name = "ucurv"
+        self.engine = engine
         # 
         if high != 'curvelet':
             self.sz = tuple(ncp.array(sz)//2)
@@ -378,7 +379,8 @@ class Udct:
             self.FL = win
 
 
-def ucurvfwd(img, udct, engine: str = "auto"):
+def ucurvfwd(img, udct):
+    engine = udct.engine
     ncp = get_module(engine)
     if getattr(ncp, "__name__", "") == "cupy": #move onto GPU if using cupy
         img = ncp.asarray(img)
@@ -436,7 +438,8 @@ def ucurvfwd(img, udct, engine: str = "auto"):
     return imband    
 
 ##############
-def ucurvinv(imband, udct, engine: str = "auto"):
+def ucurvinv(imband, udct):
+    engine = udct.engine
     ncp = get_module(engine)
     if getattr(ncp, "__name__", "") == "cupy": #move onto GPU if using cupy
         imband = ncp.asarray(imband)
