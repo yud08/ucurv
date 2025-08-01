@@ -1,9 +1,8 @@
-from .backend import ncp as _ncp_func
-ncp = _ncp_func() 
 import numpy as np
 from .util import fun_meyer
+from .backend import get_module
 
-def meyer_wavelet(N):
+def meyer_wavelet(N, engine: str = "auto"):
     """
     Generate forward and inverse 1D Meyer wavelet filters of length N.
 
@@ -30,15 +29,16 @@ def meyer_wavelet(N):
     It then calls `fun_meyer(x, prm)` to generate the Meyer window,
     applies FFT-shift for the forward filter, and takes the square roots.
     """
+    ncp = get_module(engine)
     step = 2*ncp.pi/N
     x = ncp.linspace(0,2*ncp.pi - step, N) - ncp.pi/2
     prm = ncp.pi*ncp.array([-1/3, 1/3 , 2/3, 4/3])
-    f1 = ncp.sqrt( ncp.fft.fftshift(fun_meyer(x, prm)) )
-    f2 = ncp.sqrt( fun_meyer(x, prm) )
+    f1 = ncp.sqrt( ncp.fft.fftshift(fun_meyer(x, prm, engine = engine)) )
+    f2 = ncp.sqrt( fun_meyer(x, prm, engine = engine) )
     return f1, f2
 
 
-def meyerfwd1d(img, dim):
+def meyerfwd1d(img, dim, engine: str = "auto"):
     """
     Perform a 1-D Meyer wavelet forward transform along a specified axis.
 
@@ -82,11 +82,12 @@ def meyerfwd1d(img, dim):
     >>> low.shape, high.shape
     ((100, 100), (100, 100))
     """
+    ncp = get_module(engine)
     ldim = img.ndim - 1
     img = ncp.swapaxes(img, dim, ldim)
     sp = img.shape
     N = sp[-1]
-    f1, f2 = meyer_wavelet(N)
+    f1, f2 = meyer_wavelet(N, engine = engine)
     f1 = ncp.reshape(f1, (1, N))
     f2 = ncp.reshape(f2, (1, N))
 
@@ -98,7 +99,7 @@ def meyerfwd1d(img, dim):
 
     return h1, h2
 
-def meyerinv1d(h1, h2, dim):
+def meyerinv1d(h1, h2, dim, engine: str = "auto"):
     """
     Inverse 1-D Meyer wavelet transform along a chosen axis.
 
@@ -146,6 +147,7 @@ def meyerinv1d(h1, h2, dim):
     >>> ncp.allclose(x, x_rec, atol=1e-6)
     True
     """
+    ncp = get_module(engine)
     ldim = h1.ndim - 1
     h1 = ncp.swapaxes(h1, dim, ldim)
     h2 = ncp.swapaxes(h2, dim, ldim)
@@ -157,7 +159,7 @@ def meyerinv1d(h1, h2, dim):
     g1[...,::2] = h1
     g2[...,1::2] = h2
     N = sp[-1]
-    f1, f2 = meyer_wavelet(N)
+    f1, f2 = meyer_wavelet(N, engine = engine)
     f1 = ncp.reshape(f1, (1, N))
     f2 = ncp.reshape(f2, (1, N))
     imfsum = f1*ncp.fft.fft(g1, axis = ldim) + f2*ncp.fft.fft(g2, axis = ldim)
@@ -165,7 +167,7 @@ def meyerinv1d(h1, h2, dim):
     imrecon = ncp.swapaxes(imrecon, dim, ldim)
     return imrecon
 
-def meyerfwdmd(img):
+def meyerfwdmd(img, engine: str = "auto"):
     """
     N-dimensional forward Meyer wavelet transform.
 
@@ -203,18 +205,19 @@ def meyerfwdmd(img):
     >>> len(subbands)
     8
     """
+    ncp = get_module(engine)
     band = [img]
     dim = len(img.shape)
     for i in range(dim):
         cband = []
         for j in range(len(band)):
-            h1 , h2  = meyerfwd1d(band[j], i)
+            h1 , h2  = meyerfwd1d(band[j], i, engine = engine)
             cband.append(h1)
             cband.append(h2)
         band = cband
     return cband    
 
-def meyerinvmd(band):
+def meyerinvmd(band, engine: str = "auto"):
     """
     Inverse *N*-dimensional Meyer wavelet transform.
 
@@ -255,11 +258,12 @@ def meyerinvmd(band):
     >>> ncp.allclose(x, x_rec, atol=1e-6)
     True
     """
+    ncp = get_module(engine)
     dim = len(band[0].shape)
     for i in range(dim-1, -1, -1):
         cband = []
         for j in range(len(band)//2):
-            imrecon = meyerinv1d( band[2*j] , band[2*j+1], i)
+            imrecon = meyerinv1d( band[2*j] , band[2*j+1], i, engine = engine)
             cband.append(imrecon)
         band = cband
     return band[0]

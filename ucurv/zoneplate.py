@@ -1,9 +1,8 @@
-from .backend import ncp as _ncp_func
-ncp = _ncp_func() 
 import numpy as np
+from .backend import get_module
 
 #used as example data for ucurv backwards and forwards transform
-def zoneplate(sz):
+def zoneplate(sz, engine: str = "auto"):
     """
     Generate an N-dimensional zone plate pattern.
 
@@ -29,6 +28,7 @@ def zoneplate(sz):
         If `sz` does not have length 2, 3, or 4.
         Higher dimensions than 4 are not implemented.
     """
+    ncp = get_module(engine)
     if len(sz) == 1:
         raise ValueError("Zoneplate does not work with 1D")
     if len(sz) == 2:
