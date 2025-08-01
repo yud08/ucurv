@@ -7,9 +7,9 @@ A curvelet is a mathematical building‑block, much like a wavelet but stretched
 
 Because of those properties, a curvelet transform can represent objects with smooth contours using far fewer coefficients than standard wavelets, making it suitable for image denoising, compression, and edge‑aware signal analysis.
 
-https://en.wikipedia.org/wiki/Curvelet
-https://towardsdatascience.com/desmystifying-curvelets-c6d88faba0bf/
-https://www.youtube.com/watch?v=jnxqHcObNK4&ab_channel=ArtemKirsanov
+https://en.wikipedia.org/wiki/Curvelet <br />
+https://towardsdatascience.com/desmystifying-curvelets-c6d88faba0bf/ <br />
+https://www.youtube.com/watch?v=jnxqHcObNK4&ab_channel=ArtemKirsanov <br />
 
 # Example usage
 The package is implemented with a Udct object, which you first must construct, providing the shape of the data to be transformed, and then the configuration for the transform, i.e how many directional wedges you wish to have at each axis and each scale. Then to apply the forwards and backwards versions of the transform, these methods must be called with the data and the Udct object. The backward perfectly inverses the forward transform. We demonstrate this below:
