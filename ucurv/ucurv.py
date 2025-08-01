@@ -378,8 +378,13 @@ class Udct:
         else:
             self.FL = win
 
-        if engine == "cupy":
+        if engine == "cupy": #lift everything to GPU
             ncp = get_module("cupy")
+
+            for key, mat in self.Sampling.items():
+                # mat is a 1D integer array
+                self.Sampling[key] = ncp.asarray(mat)
+
             # Convert each sub-window
             for key, w in self.Msubwin.items():
                 if self.sparse:
