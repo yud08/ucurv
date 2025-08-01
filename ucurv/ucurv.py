@@ -232,7 +232,7 @@ def upsamp(band, samp, shift = None, engine: str = "auto"):
 ####  class to hold all curvelet windows and other based on transform configuration
 class Udct:
     def __init__(self, sz, cfg, complex = False, sparse = False, high = 'curvelet', engine: str = "auto"):
-        ncp = get_module(engine)
+        ncp = get_module("numpy") #just build all windows on CPU, much faster
         self.name = "ucurv"
         self.engine = engine
         # 
@@ -377,6 +377,26 @@ class Udct:
             self.FL = ( ncp.nonzero(win), win[ncp.nonzero(win)] )
         else:
             self.FL = win
+        if self.engine == "cupy":
+            ncp = get_module("cupy")
+            # Convert each sub-window
+            for key, w in self.Msubwin.items():
+                if self.sparse:
+                    idx, vals = w
+                    # idx is a tuple of index-arrays, vals is an array of values
+                    idx_gpu  = tuple(ncp.asarray(i) for i in idx)
+                    vals_gpu = ncp.asarray(vals)
+                    self.Msubwin[key] = (idx_gpu, vals_gpu)
+                else:
+                    self.Msubwin[key] = ncp.asarray(w)
+
+            if self.sparse:
+                idx, vals = self.FL
+                idx_gpu  = tuple(ncp.asarray(i) for i in idx)
+                vals_gpu = ncp.asarray(vals)
+                self.FL = (idx_gpu, vals_gpu)
+            else:
+                self.FL = ncp.asarray(self.FL)
 
 
 def ucurvfwd(img, udct): #will return either on the CPU or GPU depending on what engine is being used
