@@ -373,6 +373,7 @@ class Udct:
 
 
 def ucurvfwd(img, udct):
+    print('ncp', ncp)
     if udct.high == 'curvelet':
         assert img.shape == udct.sz
     Msubwin = udct.Msubwin
