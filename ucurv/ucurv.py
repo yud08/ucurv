@@ -232,9 +232,9 @@ def upsamp(band, samp, shift = None, engine: str = "auto"):
 ####  class to hold all curvelet windows and other based on transform configuration
 class Udct:
     def __init__(self, sz, cfg, complex = False, sparse = False, high = 'curvelet', engine: str = "auto"):
-        ncp = get_module("numpy") #just build all windows on CPU, much faster
+        ncp = get_module("numpy") #just build all windows on CPU, much faster, then lift to GPU if requested engine is cupy
         self.name = "ucurv"
-        self.engine = "numpy" #for now, change at end
+        self.engine = engine
         # 
         if high != 'curvelet':
             self.sz = tuple(ncp.array(sz)//2)
@@ -282,9 +282,9 @@ class Udct:
         # print(f1d)
         for ind in range(dim):
             for rs in range(res):
-                f1d[ (rs, ind) ] = fun_meyer(ncp.abs(Sgrid[ind]), [-2, -1, r[0]/2**(res-1-rs), r[1]/2**(res-1-rs)], engine = engine)
+                f1d[ (rs, ind) ] = fun_meyer(ncp.abs(Sgrid[ind]), [-2, -1, r[0]/2**(res-1-rs), r[1]/2**(res-1-rs)])
 
-            f1d[ (res, ind )] = fun_meyer(ncp.abs(Sgrid[ind]), [-2, -1, r[2], r[3] ], engine = engine)
+            f1d[ (res, ind )] = fun_meyer(ncp.abs(Sgrid[ind]), [-2, -1, r[2], r[3] ])
 
         SLgrid = [ [] for i in range(dim) ]
         for ind in range(dim):
@@ -293,7 +293,7 @@ class Udct:
         # fl1d = []
         FL = ncp.ones([1])
         for ind in range(dim):
-            fl1d = fun_meyer(ncp.abs(SLgrid[ind]), [-2, -1, r[0]/2**(res-1), r[1]/2**(res-1)], engine = engine) 
+            fl1d = fun_meyer(ncp.abs(SLgrid[ind]), [-2, -1, r[0]/2**(res-1), r[1]/2**(res-1)]) 
             FL = ncp.kron(FL, fl1d.flatten() )
             # print(FL.shape)
         FL = FL.reshape(self.sz)
@@ -314,7 +314,7 @@ class Udct:
                         continue
                     
                     # print(ndir, cfg[rs][ idir] )
-                    Mg0 = tan_theta_grid(Sgrid[ind], Sgrid[idir], engine = engine)
+                    Mg0 = tan_theta_grid(Sgrid[ind], Sgrid[idir])
 
                     # create the bandpass function
                     BP1 = ncp.outer(f1d[(rs,ind)], f1d[(rs,idir)] )
@@ -322,7 +322,7 @@ class Udct:
                     bandpass = (BP2 - BP1)**(1./(dim-1.))
 
                     # create the 2D angle function, in the vertical 2D pyramid
-                    Mang2[(rs, ind, idir)]  = angle_fun( Mg0, cfg[rs][ idir] , alpha, 1, bandpass, engine = engine)
+                    Mang2[(rs, ind, idir)]  = angle_fun( Mg0, cfg[rs][ idir] , alpha, 1, bandpass)
 
         #################################
         Msubwin = {}
@@ -350,7 +350,7 @@ class Udct:
                 for alist in id_angle_list:
                     subband = ncp.ones(self.sz)
                     for idir, aid in enumerate(alist):
-                        angkron = angle_kron(Mang2[(rs, ipyr, dlist[idir])][aid] , [ipyr, dlist[idir]], self.sz, engine = engine)
+                        angkron = angle_kron(Mang2[(rs, ipyr, dlist[idir])][aid] , [ipyr, dlist[idir]], self.sz)
                         subband = subband*angkron
                         cnt += 1
 
@@ -362,7 +362,7 @@ class Udct:
             sumall = sumall + subwin
             # print(id, ncp.max(subwin), ncp.max(sumall))
 
-        sumall = sumall + fftflip(sumall, engine = engine)
+        sumall = sumall + fftflip(sumall)
         sumall = sumall + FL
 
         self.Msubwin = {}
@@ -398,7 +398,6 @@ class Udct:
                 self.FL = (idx_gpu, vals_gpu)
             else:
                 self.FL = ncp.asarray(self.FL)
-            self.engine = "cupy"
 
 
 def ucurvfwd(img, udct): #will return either on the CPU or GPU depending on what engine is being used
