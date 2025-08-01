@@ -16,76 +16,36 @@ Typical use
     y = ncp().sin(ncp().pi / 4)
 """
 
-from __future__ import annotations
+import numpy as np
+import warnings
 
-import importlib
-import os
-from types import ModuleType
-from typing import Literal
-
-# ---------------------------------------------------------------------------
-# INTERNAL STATE
-# ---------------------------------------------------------------------------
-_BackendLiteral = Literal["auto", "numpy", "cupy"]
-
-_backend: _BackendLiteral = os.getenv("UCURV_BACKEND", "auto").lower()  # user hint
-_backend_module: ModuleType | None = None                               # cache
-
-
-def _resolve_backend() -> ModuleType:
-    """Resolve once, cache in `_backend_module`, then return it."""
-    global _backend_module
-
-    if _backend_module is not None:            # already chosen
-        return _backend_module
-
-    if _backend == "numpy":
-        mod = importlib.import_module("numpy")
-
-    elif _backend == "cupy":
-        mod = importlib.import_module("cupy")  # will raise if missing
-
-    else:  # "auto"  → prefer Numpy 
-        try:
-            mod = importlib.import_module("numpy")
-        except ModuleNotFoundError:
-            raise Exception("Numpy is not installed")
-
-    _backend_module = mod
-    return mod
-
-
-# ---------------------------------------------------------------------------
-# PUBLIC API
-# ---------------------------------------------------------------------------
-def ncp() -> ModuleType:     # noqa:  N802  (keep NumPy‑style name)
-    """Return NumPy or CuPy according to the active back end."""
-    return _resolve_backend()
-
-
-def get_backend() -> _BackendLiteral:
-    """Return the current backend flag ("auto", "numpy", or "cupy")."""
-    return _backend
-
-
-def set_backend(name: _BackendLiteral) -> None:
-    """
-    Set the back end flag **before** the first call to :func:`ncp`.
+def get_module(backend: str = "numpy"):
+    """Returns correct numerical module based on backend string
 
     Parameters
     ----------
-    name : {"auto", "numpy", "cupy"}
+    backend : :obj:`str`, optional
+        Backend used for dot test computations (``numpy`` or ``cupy``). This
+        parameter will be used to choose how to create the random vectors.
+
+    Returns
+    -------
+    mod : :obj:`func`
+        Module to be used to process array (:mod:`numpy` or :mod:`cupy`)
+
     """
-    global _backend
-    if name not in {"auto", "numpy", "cupy"}:
-        raise ValueError("backend must be 'auto', 'numpy', or 'cupy'")
-
-    if _backend_module is not None:
-        raise RuntimeError(
-            "Backend already resolved; set UCURV_BACKEND or call "
-            "set_backend() before importing ucurv modules that use ncp()."
-        )
-
-    _backend = name
-
-set_backend("cupy")
+    if backend == "auto" or backend == "numpy":
+        ncp = np
+    elif backend == "cupy":
+        try:
+            ncp = __import__("cupy")
+        except ImportError:
+            warnings.warn(
+                "engine='cupy' requested, but CuPy is not installed, falling back to numpy",
+                category=ImportWarning,
+                stacklevel=2
+            )
+            ncp = np
+    else:
+        raise ValueError("backend must be numpy, or cupy")
+    return ncp

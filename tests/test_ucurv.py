@@ -1,8 +1,4 @@
 #Tests the main ucurv object creation and forward and backwards call
-
-from ucurv.backend import ncp as _ncp_func
-ncp = _ncp_func() 
-
 import pytest
 import ucurv
 import numpy as np
@@ -20,7 +16,7 @@ from . import eps, combinations
 @pytest.mark.parametrize("shape, cfg", combinations)
 def test_ucurv(shape, cfg, complex_, sparse, high):
     """
-    Tests that the forward transform is perfectly inversed by the backwards transform.
+    Tests that the forward transform is perfectly inversed by the backwards transform, only for the numpy version.
     Calls the forward and backwards on random data of multiple different shapes and multiple different configurations for the transform.
     Shapes and configurations are listed above, and all possible pairs are combined together in combinations.
     """
