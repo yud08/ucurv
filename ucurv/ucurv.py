@@ -234,7 +234,7 @@ class Udct:
     def __init__(self, sz, cfg, complex = False, sparse = False, high = 'curvelet', engine: str = "auto"):
         ncp = get_module("numpy") #just build all windows on CPU, much faster
         self.name = "ucurv"
-        self.engine = engine
+        self.engine = "numpy" #for now, change at end
         # 
         if high != 'curvelet':
             self.sz = tuple(ncp.array(sz)//2)
@@ -377,7 +377,8 @@ class Udct:
             self.FL = ( ncp.nonzero(win), win[ncp.nonzero(win)] )
         else:
             self.FL = win
-        if self.engine == "cupy":
+
+        if engine == "cupy":
             ncp = get_module("cupy")
             # Convert each sub-window
             for key, w in self.Msubwin.items():
@@ -397,6 +398,7 @@ class Udct:
                 self.FL = (idx_gpu, vals_gpu)
             else:
                 self.FL = ncp.asarray(self.FL)
+            self.engine = "cupy"
 
 
 def ucurvfwd(img, udct): #will return either on the CPU or GPU depending on what engine is being used
