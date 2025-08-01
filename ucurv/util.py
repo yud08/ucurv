@@ -1,9 +1,8 @@
-from .backend import ncp as _ncp_func
-ncp = _ncp_func() 
 import math
 import numpy as np
+from .backend import get_module
 
-def fun_meyer(x, param):
+def fun_meyer(x, param, engine: str = "auto"):
     """
     Compute a smooth window similar to the Meyer wavelet in frequency domain.
 
@@ -23,6 +22,7 @@ def fun_meyer(x, param):
     w : ndarray
         The window values evaluated at each point in `x`.
     """
+    ncp = get_module(engine)
     if not (len(param) == 4 and param[0] < param[1] < param[2] < param[3]):
         raise Exception("param should be of size 4, and p[0] < p[1] < p[2] < p[3]")
     
@@ -38,7 +38,7 @@ def fun_meyer(x, param):
     y[ (x >= param[2]) & (x <= param[3]) ] = ncp.polyval( p, xx)
     return y.reshape(x.shape)
 
-def bands2vec(imband):
+def bands2vec(imband, engine: str = "auto"):
     """
     Convert the dictionary of complex subbands into a real-valued compressed vector.
 
@@ -56,6 +56,7 @@ def bands2vec(imband):
         - Then, for each detail subband, the interleaved real and imaginary parts, 
         so a0, b0, a1, b1, ..., where a is real and b is imaginary
     """
+    ncp = get_module(engine)
     compressed = ncp.real(imband[(0,)].flatten())
     # ucurv.imSz[0] = imband[0].shape
     for id, subwin in imband.items():
@@ -67,7 +68,7 @@ def bands2vec(imband):
         compressed = ncp.concatenate((compressed, ncp.array(c)))
     return compressed
 
-def vec2bands(imband, udct):
+def vec2bands(imband, udct, engine: str = "auto"):
     """
     Reconstruct the dictionary of complex subbands from a compressed real-valued vector.
 
@@ -90,6 +91,7 @@ def vec2bands(imband, udct):
         Mapping from subband identifier (tuple) to ndarray of complex coefficients,
         reconstructed to the appropriate shape.
     """            
+    ncp = get_module(engine)
     # imSz = ncp.array(udct.sz)//2**(udct.res - 1)
     # # first is the low band
     # uncompressed = {(0,) :ncp.reshape(imband[:ncp.prod(imSz)], imSz)}
@@ -111,7 +113,7 @@ def vec2bands(imband, udct):
         p += 2 * length
     return uncompressed
 
-def ucurv2d_show(imband, udct):
+def ucurv2d_show(imband, udct, engine: str = "auto"):
     """
     Note: currently broken
     Assemble and visualize a 2D curvelet transform by concatenating its subbands.
@@ -139,6 +141,7 @@ def ucurv2d_show(imband, udct):
     Exception
         If `udct.dim != 2`, since this function only supports 2D transforms.
     """
+    ncp = get_module(engine)
     if udct.dim != 2:
         raise Exception(" ucurv2d_show only work with 2D transform")
     cfg = udct.cfg
