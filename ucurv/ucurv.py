@@ -439,6 +439,7 @@ def ucurvfwd(img, udct): #will return either on the CPU or GPU depending on what
 
 ##############
 def ucurvinv(imband, udct):
+    print("why are you no find")
     engine = udct.engine
     ncp = get_module(engine)
     Msubwin = udct.Msubwin
