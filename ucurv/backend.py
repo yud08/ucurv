@@ -88,4 +88,4 @@ def set_backend(name: _BackendLiteral) -> None:
 
     _backend = name
 
-#set_backend("cupy")
+set_backend("cupy")
