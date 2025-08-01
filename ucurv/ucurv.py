@@ -369,14 +369,12 @@ class Udct:
         for id, subwin in Msubwin.items():
             win = ncp.fft.fftshift(ncp.sqrt(2*ncp.prod(self.Sampling[(id[0], id[1])]) *subwin / sumall))
             if sparse:
-                nonZ = ncp.nonzero(np.abs(win) > 1e-6)
-                self.Msubwin[id] = ( nonZ, win[nonZ] )
+                self.Msubwin[id] = ( ncp.nonzero(win), win[ncp.nonzero(win)] )
             else:
                 self.Msubwin[id] = win
         win  = ncp.sqrt(ncp.prod(self.Sampling[(0)]))*ncp.fft.fftshift(ncp.sqrt(FL/sumall))        
         if sparse:
-            nonZ = ncp.nonzero(np.abs(win) > 1e-6)
-            self.FL = ( nonZ, win[nonZ] )
+            self.FL = ( ncp.nonzero(win), win[ncp.nonzero(win)] )
         else:
             self.FL = win
 
