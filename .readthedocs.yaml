@@ -11,9 +11,7 @@ sphinx:
 
 python:
   install:
-    # Install your package in editable mode + extra dependencies
     - method: pip
       path: .
-      extra_requirements:
-        - sphinx
-        - sphinx-rtd-theme
+    - method: pip
+      args: ["sphinx", "sphinx-rtd-theme"]
