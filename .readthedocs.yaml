@@ -9,11 +9,13 @@ build:
 sphinx:
   configuration: docs/source/conf.py  
 
-
 python:
   install:
-    # install your package in editable mode (optional but common)
+    # Install your package in editable mode (so autodoc can import it)
     - method: pip
       path: .
-    # doc‑only dependencies
-    # - requirements: docs/requirements.txt
+    # Install the Sphinx ReadTheDocs theme directly
+    - method: pip
+      dependencies:
+        - sphinx
+        - sphinx-rtd-theme
