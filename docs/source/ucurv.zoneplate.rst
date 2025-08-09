@@ -1,7 +1,8 @@
-ucurv.zoneplate module
+ucurv.zoneplate 
 ======================
 
 .. automodule:: ucurv.zoneplate
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
+

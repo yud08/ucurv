@@ -1,7 +1,7 @@
-ucurv.meyerwavelet module
-=========================
+ucurv.meyerwavelet
+==================
 
 .. automodule:: ucurv.meyerwavelet
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
