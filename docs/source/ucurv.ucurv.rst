@@ -1,7 +1,7 @@
-ucurv.ucurv module
-==================
+ucurv.ucurv
+===========
 
 .. automodule:: ucurv.ucurv
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

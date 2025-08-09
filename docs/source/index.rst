@@ -44,14 +44,15 @@ https://www.youtube.com/watch?v=jnxqHcObNK4&ab_channel=ArtemKirsanov
    err = img - recon
    print(np.max(np.abs(err)))
 
-API reference
-=============
+UDCT
+====
 
 .. toctree::
    :maxdepth: 2
-   :caption: API Reference
-   :glob:
+   :caption: Modules
 
-   ucurv.*
-   modules
-
+   ucurv.backend
+   ucurv.meyerwavelet
+   ucurv.ucurv
+   ucurv.util
+   ucurv.zoneplate

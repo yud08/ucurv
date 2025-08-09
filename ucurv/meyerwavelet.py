@@ -22,10 +22,8 @@ def meyer_wavelet(N, engine: str = "auto"):
 
     Notes
     -----
-    This function constructs a spatial grid
-        x = linspace(0, 2π, N, endpoint=False) - π/2
-    and parameters
-        prm = π * [-1/3, 1/3, 2/3, 4/3]
+    This function constructs a spatial grid: x = linspace(0, 2π, N, endpoint=False) - π/2, 
+    and parameters: prm = π * [-1/3, 1/3, 2/3, 4/3]. 
     It then calls `fun_meyer(x, prm)` to generate the Meyer window,
     applies FFT-shift for the forward filter, and takes the square roots.
     """
