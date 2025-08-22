@@ -231,6 +231,26 @@ def upsamp(band, samp, shift = None, engine: str = "auto"):
 
 ####  class to hold all curvelet windows and other based on transform configuration
 class Udct:
+    """ A class to hold the configuration and parameters for the ucurv transform.       
+    This class initializes the sampling vectors, computes the parameters, and prepares the
+    curvelet windows based on the specified parameters.
+    Parameters
+    ----------
+    sz : tuple of int
+        The size of the input image or data array. It must be the even multiples of the resolution levels.  
+        2D example: (256, 256) for a 2D image.
+    cfg : list of list of int
+        Configuration for the curvelet transform, where each inner list specifies the number of angles
+        for each resolution level.
+    complex : bool, optional
+        If True, the transform will ouput complex curvelet coefficients. Default is False.
+    sparse : bool, optional
+        If True, the transform will store sparse representations of the windows. This will sigmificantly
+        reduced memory required to remember the curvelet windows. Default is False.
+    high : str, optional
+        Specifies the type of the transform to use on the highest resolution. This will reduce the 
+        redundancy of the transform. Options are 'curvelet' or 'wavelet'. Default is 'curvelet'.
+    """
     def __init__(self, sz, cfg, complex = False, sparse = False, high = 'curvelet', engine: str = "auto"):
         ncp = get_module("numpy") #just build all windows on CPU, much faster, then lift to GPU if requested engine is cupy
         self.name = "ucurv"
@@ -279,7 +299,6 @@ class Udct:
         r = ncp.pi*ncp.array([1/3, 2/3, 2/3, 4/3])
         alpha = 0.1
         f1d = {}
-        # print(f1d)
         for ind in range(dim):
             for rs in range(res):
                 f1d[ (rs, ind) ] = fun_meyer(ncp.abs(Sgrid[ind]), [-2, -1, r[0]/2**(res-1-rs), r[1]/2**(res-1-rs)])
@@ -302,7 +321,7 @@ class Udct:
         # angle pyramid. As such it is a 4D dictionary 2D angle funtions. The dimension are
         # Resolution - Dimension (number of hyper pyramid) - Dimension-1 (number of angle
         # function in each pyramid ) - Number of angle function in that particular resolution-direction
-        #
+
         Mang2 = {}
         for rs in range(res):
             # For each resolution we loop through each pyramid
@@ -313,7 +332,6 @@ class Udct:
                     if idir == ind : # skip the dimension that is the same as the pyramid
                         continue
                     
-                    # print(ndir, cfg[rs][ idir] )
                     Mg0 = tan_theta_grid(Sgrid[ind], Sgrid[idir])
 
                     # create the bandpass function
@@ -330,15 +348,12 @@ class Udct:
 
         for rs in range(res):
             dlists = generate_combinations(dim)[::-1]
-            #print(dlists)
             id_angle_lists = []
             for x in dlists:
                 new_list = [[i] for i in range(cfg[rs][x[0]])]
                 for i in range(1, len(x)):
                     new_list = [z + [j] for z in new_list for j in range(cfg[rs][x[i]])] 
                 id_angle_lists.append(new_list)
-            #print(dlists)
-            #print(id_angle_lists)
             for ipyr in range(dim):
                 # for each resolution-pyramid, id_angle_list is the angle combinaion within that pyramid
                 # for instance, (5,5) would be the last angle of a (6,6) 3D pyramid
@@ -360,7 +375,6 @@ class Udct:
         sumall = ncp.zeros(self.sz)
         for id, subwin in Msubwin.items():
             sumall = sumall + subwin
-            # print(id, ncp.max(subwin), ncp.max(sumall))
 
         sumall = sumall + fftflip(sumall)
         sumall = sumall + FL
@@ -405,7 +419,49 @@ class Udct:
                 self.FL = ncp.asarray(self.FL)
 
 
-def ucurvfwd(img, udct): #will return either on the CPU or GPU depending on what engine is being used
+def ucurvfwd(img, udct): 
+    """
+    Forward Uniform Discrete Curvelet Transform (UDCT).
+
+    This function computes the forward UDCT coefficients of a given 
+    MD input signal `img` using the precomputed parameters and windows.
+    Will either return output on the CPU/GPU depending on which engine is used(numpy/cupy).
+
+    Parameters
+    ----------
+    img : ndarray
+        Input real- or complex-valued array of dimension `udct.dim` and 
+        shape `udct.sz`. For `high='curvelet'`, the image size must match 
+        exactly `udct.sz`. For `high='wavelet'`, the highest resolution is 
+        decomposed with Meyer wavelets instead of curvelets.
+    udct : Udct
+        An instance of the Udct class containing precomputed window 
+        functions, sampling factors, and configuration parameters for 
+        the transform.
+
+    Returns
+    -------
+    imband : dict
+        Dictionary of UDCT coefficients (subbands). Keys are tuples 
+        identifying each subband:
+          - (0,) : lowpass scaling coefficients.
+          - (rs, ipyr, a1, ..., ak) : directional subbands at resolution `rs`, 
+            pyramid index `ipyr`, and angular indices (a1, ..., ak), where 
+            k = udct.dim -1 (why ?).
+          - For complex UDCT, each subband has a conjugate-symmetric 
+            counterpart indexed with `ipyr + udct.dim`.
+
+        Each subband is stored as a downsampled array according to the 
+        decimation factors in `udct.Sampling`.
+
+    Notes
+    -----
+    - Inverse transform function  `ucurvinv`.
+    - If `udct.complex=True`, symmetric/antisymmetric curvelets are stored 
+      separately as conjugate subbands, requiring sqrt(0.5) normalization.
+    - If `udct.sparse=True`, subband windows are stored sparsely and 
+      reconstructed on-the-fly.
+    """    
     engine = udct.engine
     ncp = get_module(engine)
     if engine == "cupy": #move onto GPU if using cupy
@@ -465,6 +521,33 @@ def ucurvfwd(img, udct): #will return either on the CPU or GPU depending on what
 
 ##############
 def ucurvinv(imband, udct):
+    """
+    Inverse Uniform Discrete Curvelet Transform (UDCT).
+    This function reconstructs a signal from its UDCT coefficients, 
+    providing the perfect inverse of `ucurvfwd`. 
+
+    Parameters
+    ----------
+    imband : dict
+        Dictionary of UDCT coefficients produced by `ucurvfwd`. Keys must 
+        follow the same convention:
+          - (0,) : lowpass scaling coefficients.
+          - (rs, ipyr, a1, ..., ak) : directional subbands.
+          - For complex UDCT, additional conjugate subbands.
+    udct : Udct
+        An instance of the Udct class containing precomputed window 
+        functions, sampling factors, and configuration parameters for 
+        the transform.
+
+    Returns
+    -------
+    recon : ndarray
+        The reconstructed signal, same shape as `udct.sz`
+
+    Notes
+    -----
+    - Uses upsampling and FFT-domain synthesis with precomputed windows.
+    """    
     engine = udct.engine
     ncp = get_module(engine)
     Msubwin = udct.Msubwin
@@ -483,7 +566,7 @@ def ucurvinv(imband, udct):
     else:
         recon = ncp.real(ncp.fft.ifftn( ncp.fft.fftn(imlow) * FL) )
     for id, subwin in Msubwin.items():
-        #
+
         if udct.high != 'curvelet' and id[0] == udct.res :
             continue
 
