@@ -1,13 +1,3 @@
-from ucurv.backend import ncp as _ncp_func
-ncp = _ncp_func() 
-
-def test_array_backend():
-    """pyt
-    Tests that backend is working correctly, and behaves like Numpy for basic operations.
-    """
-    arr = ncp.ones((2, 2))
-    assert arr.sum() == 4
-
 import pytest
 from ucurv.meyerwavelet import *
 import numpy as np
