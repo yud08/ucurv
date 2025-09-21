@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-UDCT documentation
+UCURV documentation
 ==================
 
 Welcome to the UDCT Documentation!
@@ -19,6 +19,16 @@ Because of those properties, a curvelet transform can represent objects with smo
 https://en.wikipedia.org/wiki/Curvelet
 https://towardsdatascience.com/desmystifying-curvelets-c6d88faba0bf/
 https://www.youtube.com/watch?v=jnxqHcObNK4&ab_channel=ArtemKirsanov
+
+.. rubric:: Comparison with the matlab toolbox
+This package is developed from the UDCT matlab toolbox available at https://www.mathworks.com/matlabcentral/fileexchange/50948-uniform-discrete-curvelet-transform by the orignal author of the paper.
+As the first step, the main algorithms have been translated from matlab to python, and the results have been verified to be identical to those of the matlab toolbox. 
+The matlab toolbox is not available under an open source license, so this package is released under the MIT license.
+Some of the improvements made in this package include: (some are still in progress and not yet available)
+- Support for complex-valued inputs and outputs.
+- Verifiable multidimensional support (2D, 3D, etc.)
+- Using Meyer wavelet transform at high resolution to reduce redundancy.
+- Adapt to a linear operator to be used in Pylops toolbox
 
 .. rubric:: Example Usage
 
@@ -44,13 +54,13 @@ https://www.youtube.com/watch?v=jnxqHcObNK4&ab_channel=ArtemKirsanov
    err = img - recon
    print(np.max(np.abs(err)))
 
-UDCT
-====
+Contents
+--------
 
 .. toctree::
    :maxdepth: 2
+   gettingstarted
    :caption: Modules
-
    ucurv.backend
    ucurv.meyerwavelet
    ucurv.ucurv
